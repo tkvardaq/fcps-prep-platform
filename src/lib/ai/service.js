@@ -95,6 +95,7 @@ export async function generateContent({ cacheKey, type, prompt, jsonMode = true 
          throw new Error('Both AI providers failed and no offline fallback available.')
       }
     }
+  }
 
   // Parse result (if JSON)
   let contentJson = null
