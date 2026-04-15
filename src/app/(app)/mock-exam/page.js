@@ -18,6 +18,13 @@ import { toast, Toaster } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { recordMockExamResult } from '@/app/actions/study-actions'
 
+const EXAM_QUOTES = [
+  "Remember: FCPS examiners once failed too. Probably. 😏",
+  "You vs. 100 MCQs. May the odds be ever in your favor. 🎯",
+  "Deep breaths. You've survived worse. Like Biochemistry lectures. 💀",
+  "Pro tip: When in doubt, pick the longest option. (Don't actually.) 🤫",
+]
+
 export default function MockExamPage() {
   const [questions, setQuestions] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -26,6 +33,7 @@ export default function MockExamPage() {
   const [examStarted, setExamStarted] = useState(false)
   const [stats, setStats] = useState({ score: 0, accuracy: 0, subjectBreakdown: [], weakAreas: [] })
   const [examMode, setExamMode] = useState('full') // 'mini' or 'full'
+  const [paperFilter, setPaperFilter] = useState(0) // 0 = both, 1 = paper1, 2 = paper2
   const [timeLeft, setTimeLeft] = useState(0)
   const [examFinished, setExamFinished] = useState(false)
   const examStartTimeRef = useRef(null)
@@ -34,25 +42,32 @@ export default function MockExamPage() {
   const router = useRouter()
 
   useEffect(() => {
-    async function loadQuestions(mode = 'full') {
+    async function loadQuestions() {
       setLoading(true)
-      const limit = mode === 'mini' ? 20 : 100
-      const { data, error } = await supabase
+      const limit = examMode === 'mini' ? 20 : 100
+      let query = supabase
         .from('mcqs')
         .select('*, subjects(name)')
         .eq('is_published', true)
-        .limit(limit)
+      
+      if (paperFilter > 0) {
+        query = query.eq('paper_number', paperFilter)
+      }
+      
+      const { data, error } = await query.limit(limit)
 
       if (data && data.length > 0) {
-        setQuestions(data)
-        setTimeLeft(mode === 'mini' ? 25 * 60 : 120 * 60)
+        // Shuffle questions
+        const shuffled = data.sort(() => Math.random() - 0.5)
+        setQuestions(shuffled)
+        setTimeLeft(examMode === 'mini' ? 25 * 60 : 120 * 60)
       } else {
-        toast.error('Not enough MCQs found. Please seed more content.')
+        toast.error('Not enough MCQs found for this selection.')
       }
       setLoading(false)
     }
-    loadQuestions(examMode)
-  }, [examMode])
+    loadQuestions()
+  }, [examMode, paperFilter])
 
   useEffect(() => {
     let timer
@@ -95,7 +110,7 @@ export default function MockExamPage() {
       const result = await recordMockExamResult({
         questions,
         userAnswers,
-        paperNumber: 1,
+        paperNumber: paperFilter || 1,
         timeTakenMinutes: timeTaken
       })
 
@@ -128,30 +143,66 @@ export default function MockExamPage() {
 
   if (!examStarted) {
     return (
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
         <Toaster richColors />
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-10 card-shadow border border-slate-100 text-center"
+          className="bg-white rounded-3xl p-8 md:p-10 card-shadow border border-slate-100"
         >
-          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Award className="w-10 h-10" />
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20">
+              <Award className="w-10 h-10" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">Exam Simulator</h1>
+            <p className="text-slate-500 text-base max-w-lg mx-auto">
+              Simulate the real CPSP exam experience. Choose your paper and mode below.
+            </p>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 mb-4">Exam Simulator</h1>
-          <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-            Select your preferred examination mode. All simulations follow official CPSP patterns.
-          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 text-left">
+          {/* Motivational Quote */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-4 mb-8 text-center">
+            <p className="text-amber-800 text-sm font-medium italic">
+              {EXAM_QUOTES[Math.floor(Math.random() * EXAM_QUOTES.length)]}
+            </p>
+          </div>
+
+          {/* Paper Selection */}
+          <div className="mb-8">
+            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3">Select Paper</h3>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { value: 0, label: 'Both Papers', color: 'slate' },
+                { value: 1, label: 'Paper I — General', color: 'blue' },
+                { value: 2, label: 'Paper II — Specialty', color: 'teal' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setPaperFilter(opt.value)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    paperFilter === opt.value 
+                      ? opt.color === 'blue' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+                        : opt.color === 'teal' ? 'bg-teal-600 text-white shadow-md shadow-teal-500/20'
+                        : 'bg-slate-900 text-white shadow-md'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Exam Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
             <button 
-              onClick={() => { setExamMode('mini'); loadQuestions('mini'); }}
-              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'mini' ? 'border-blue-600 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200'}`}
+              onClick={() => setExamMode('mini')}
+              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'mini' ? 'border-blue-600 bg-blue-50/30 shadow-sm' : 'border-slate-100 hover:border-blue-200'}`}
             >
-               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-xl">
-                 <Zap className="w-6 h-6 text-amber-500" /> Mini Mock
+               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-lg">
+                 <Zap className="w-5 h-5 text-amber-500" /> Mini Mock
                </div>
-               <p className="text-slate-500 font-medium mb-4 italic text-sm">Best for daily focused sessions.</p>
+               <p className="text-slate-500 font-medium mb-3 text-sm">Best for daily focused sessions.</p>
                <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
                  <span className="flex items-center gap-1"><Info className="w-3 h-3" /> 20 MCQs</span>
                  <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> 25 Mins</span>
@@ -159,13 +210,13 @@ export default function MockExamPage() {
             </button>
 
             <button 
-              onClick={() => { setExamMode('full'); loadQuestions('full'); }}
-              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'full' ? 'border-blue-600 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200'}`}
+              onClick={() => setExamMode('full')}
+              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'full' ? 'border-blue-600 bg-blue-50/30 shadow-sm' : 'border-slate-100 hover:border-blue-200'}`}
             >
-               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-xl">
-                 <Award className="w-6 h-6 text-blue-600" /> Full Simulation
+               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-lg">
+                 <Award className="w-5 h-5 text-blue-600" /> Full Simulation
                </div>
-               <p className="text-slate-500 font-medium mb-4 italic text-sm">Total syllabus assessment.</p>
+               <p className="text-slate-500 font-medium mb-3 text-sm">Complete CPSP exam experience.</p>
                <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
                  <span className="flex items-center gap-1"><Info className="w-3 h-3" /> 100 MCQs</span>
                  <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> 120 Mins</span>
@@ -173,13 +224,17 @@ export default function MockExamPage() {
             </button>
           </div>
 
-          <button 
-            onClick={startExam}
-            disabled={loading || questions.length === 0}
-            className="bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white px-12 py-4 rounded-xl font-black text-xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
-          >
-            Start {examMode === 'mini' ? 'Mini Mock' : 'Full Exam'}
-          </button>
+          <div className="text-center">
+            <button 
+              onClick={startExam}
+              disabled={loading || questions.length === 0}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 disabled:opacity-50 hover:from-blue-700 hover:to-indigo-700 text-white px-12 py-4 rounded-xl font-black text-lg transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+            >
+              Start {examMode === 'mini' ? 'Mini Mock' : 'Full Exam'}
+              {paperFilter > 0 && ` — Paper ${paperFilter}`}
+            </button>
+            <p className="text-xs text-slate-400 mt-3 font-medium">{questions.length} questions loaded</p>
+          </div>
         </motion.div>
       </div>
     )
