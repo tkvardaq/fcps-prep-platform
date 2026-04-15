@@ -2,6 +2,9 @@ import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 import Header from '@/components/layout/Header'
 
+// Prevent static prerendering — all app pages need Supabase auth
+export const dynamic = 'force-dynamic'
+
 export default function AppLayout({ children }) {
   return (
     <div className="flex h-screen bg-slate-50">
