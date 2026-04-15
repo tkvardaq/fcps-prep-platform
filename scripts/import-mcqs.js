@@ -139,9 +139,9 @@ async function run() {
             option_d: row['Option D'].trim(),
             correct_answer: row['Correct Answer'].toUpperCase().trim(),
             explanation: row.Explanation ? row.Explanation.trim() : 'No explanation provided.',
-            difficulty: row.Difficulty ? row.Difficulty.toUpperCase().trim() : 'MEDIUM',
+            difficulty: row.Difficulty ? row.Difficulty.toLowerCase().trim() : 'medium',
             reference_book: row['Reference Book'] ? row['Reference Book'].trim() : 'Standard Textbook',
-            question_type: 'clinical',
+            question_type: 'clinical_scenario',
             is_published: true
           }
 

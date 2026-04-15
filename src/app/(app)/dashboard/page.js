@@ -16,8 +16,11 @@ import {
   Sparkles,
   BrainCircuit,
   Trophy,
-  Flame
+  Flame,
+  Zap
 } from 'lucide-react'
+import { AccuracyTrend, TopicMastery, RetentionMeter } from '@/components/analytics/PerformanceCharts'
+import { getAnalyticsData } from '@/app/actions/study-actions'
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState(null)
@@ -26,6 +29,7 @@ export default function DashboardPage() {
   const [todaySchedule, setTodaySchedule] = useState([])
   const [weakTopics, setWeakTopics] = useState([])
   const [dueReviews, setDueReviews] = useState(0)
+  const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
@@ -145,7 +149,10 @@ export default function DashboardPage() {
 
     setDueReviews(due || 0)
 
-    // Days until exam
+    // Load Analytics
+    const analyticsData = await getAnalyticsData()
+    setAnalytics(analyticsData)
+
     setLoading(false)
   }
 
@@ -236,55 +243,37 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Weak Areas */}
-          {weakTopics.length > 0 && (
+          {/* Performance Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-6">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-                <AlertTriangle className="w-5 h-5 text-orange-500" /> Weak Areas
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                <TrendingUp className="w-5 h-5 text-blue-600" /> Accuracy Trend
               </h2>
-              <div className="space-y-3">
-                {weakTopics.map((w) => (
-                  <div key={w.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div>
-                      <p className="font-bold text-slate-800">{w.topics?.name}</p>
-                      <p className="text-xs text-slate-500">{w.subjects?.name} · {w.attempt_count} attempts · <span className={w.trend === 'improving' ? 'text-teal-600' : w.trend === 'worsening' ? 'text-red-600' : 'text-slate-500'}>{w.trend}</span></p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${Number(w.accuracy_percent) < 40 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {w.accuracy_percent}%
-                      </span>
-                      <Link href={`/quiz?topic=${w.topic_id}`}><PlayCircle className="w-5 h-5 text-blue-600" /></Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <AccuracyTrend data={analytics?.trendData || []} />
             </div>
-          )}
+            <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-6">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
+                <Trophy className="w-5 h-5 text-amber-500" /> Topic Mastery
+              </h2>
+              <TopicMastery data={analytics?.masteryData || []} />
+            </div>
+          </div>
         </div>
 
         {/* Right Column (2/5) */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Readiness Ring */}
-          <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-6 text-center">
-            <h2 className="text-lg font-bold text-slate-900 mb-6">Exam Readiness</h2>
-            <div className="relative w-36 h-36 mx-auto mb-6">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100" />
-                <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-blue-500"
-                  strokeDasharray={`${2 * Math.PI * 42}`}
-                  strokeDashoffset={`${2 * Math.PI * 42 * (1 - (paper?.overall || 0) / 100)}`}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-black text-slate-900">{paper?.overall || 0}%</span>
+          {/* Retention Meter */}
+          <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Memory Strength</h2>
+            <p className="text-xs text-slate-500 mb-6 font-medium">Likelihood of recall today</p>
+            <RetentionMeter percentage={analytics?.retention || 0} />
+            
+            <div className="mt-4 pt-4 border-t border-slate-50 text-left">
+              <div className="space-y-3">
+                <ProgressBar label="Paper 1 — Basic Sciences" value={paper?.paper1 || 0} color="bg-blue-500" />
+                <ProgressBar label="Paper 2 — Clinical" value={paper?.paper2 || 0} color="bg-teal-500" />
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <ProgressBar label="Paper 1 — Basic Sciences" value={paper?.paper1 || 0} color="bg-blue-500" />
-              <ProgressBar label="Paper 2 — Clinical" value={paper?.paper2 || 0} color="bg-teal-500" />
             </div>
           </div>
 
@@ -313,12 +302,19 @@ export default function DashboardPage() {
                 </div>
                 <ChevronRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/leaderboard" className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors group">
+              <Link href="/rapid-recall" className="flex items-center justify-between p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors group">
                 <div className="flex items-center gap-3">
-                  <Trophy className="w-5 h-5 text-amber-600" />
-                  <span className="font-bold text-amber-900">Leaderboard</span>
+                  <Zap className="w-5 h-5 text-amber-600" />
+                  <span className="font-bold text-amber-900">Rapid Recall (Active Recall)</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link href="/leaderboard" className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <Trophy className="w-5 h-5 text-slate-600" />
+                  <span className="font-bold text-slate-800">Leaderboard</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </div>

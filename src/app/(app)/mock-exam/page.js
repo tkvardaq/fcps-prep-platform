@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   FastForward,
   Info,
-  Award
+  Award,
+  Zap
 } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -23,32 +24,31 @@ export default function MockExamPage() {
   const [userAnswers, setUserAnswers] = useState({})
   const [loading, setLoading] = useState(true)
   const [examStarted, setExamStarted] = useState(false)
-  const [examFinished, setExamFinished] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(120 * 60) // 120 minutes in seconds
-  const [subjectFilters, setSubjectFilters] = useState([])
   const [stats, setStats] = useState({ score: 0, accuracy: 0, subjectBreakdown: [], weakAreas: [] })
+  const [examMode, setExamMode] = useState('full') // 'mini' or 'full'
   const examStartTimeRef = useRef(null)
 
   const supabase = createClient()
   const router = useRouter()
 
   useEffect(() => {
-    async function loadQuestions() {
-      // Fetch 100 questions (50 Paper 1, 50 Paper 2) for a full mock
-      const { data, error } = await supabase
-        .from('mcqs')
-        .select('*, subjects(name)')
-        .eq('is_published', true)
-        .limit(100)
+  async function loadQuestions(mode = 'full') {
+    setLoading(true)
+    const limit = mode === 'mini' ? 20 : 100
+    const { data, error } = await supabase
+      .from('mcqs')
+      .select('*, subjects(name)')
+      .eq('is_published', true)
+      .limit(limit)
 
-      if (data && data.length > 0) {
-        setQuestions(data)
-      } else {
-        toast.error('Not enough MCQs found for a full mock exam. Please seed more content.')
-      }
-      setLoading(false)
+    if (data && data.length > 0) {
+      setQuestions(data)
+      setTimeLeft(mode === 'mini' ? 25 * 60 : 120 * 60)
+    } else {
+      toast.error('Not enough MCQs found. Please seed more content.')
     }
-    loadQuestions()
+    setLoading(false)
+  }
   }, [])
 
   useEffect(() => {
@@ -135,38 +135,47 @@ export default function MockExamPage() {
           <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Award className="w-10 h-10" />
           </div>
-          <h1 className="text-4xl font-black text-slate-900 mb-4">FCPS Mock Examination</h1>
+          <h1 className="text-4xl font-black text-slate-900 mb-4">Exam Simulator</h1>
           <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">
-            This simulated exam consists of 100 high-yield MCQs covering the entire FCPS Part 1 Gynae & Obs syllabus. 
-            The format is designed to replicate the actual CPSP physical exam environment.
+            Select your preferred examination mode. All simulations follow official CPSP patterns.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 text-left">
-            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-               <div className="flex items-center gap-3 text-slate-900 font-bold mb-1">
-                 <Timer className="w-5 h-5 text-blue-600" /> Duration
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 text-left">
+            <button 
+              onClick={() => { setExamMode('mini'); loadQuestions('mini'); }}
+              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'mini' ? 'border-blue-600 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200'}`}
+            >
+               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-xl">
+                 <Zap className="w-6 h-6 text-amber-500" /> Mini Mock
                </div>
-               <p className="text-slate-500 font-medium">120 Minutes</p>
-            </div>
-            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-               <div className="flex items-center gap-3 text-slate-900 font-bold mb-1">
-                 <Info className="w-5 h-5 text-blue-600" /> Questions
+               <p className="text-slate-500 font-medium mb-4 italic text-sm">Best for daily focused sessions.</p>
+               <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                 <span className="flex items-center gap-1"><Info className="w-3 h-3" /> 20 MCQs</span>
+                 <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> 25 Mins</span>
                </div>
-               <p className="text-slate-500 font-medium">100 MCQs</p>
-            </div>
-            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-               <div className="flex items-center gap-3 text-slate-900 font-bold mb-1">
-                 <AlertTriangle className="w-5 h-5 text-blue-600" /> Condition
+            </button>
+
+            <button 
+              onClick={() => { setExamMode('full'); loadQuestions('full'); }}
+              className={`p-6 rounded-2xl border-2 transition-all text-left ${examMode === 'full' ? 'border-blue-600 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200'}`}
+            >
+               <div className="flex items-center gap-3 text-slate-900 font-bold mb-2 text-xl">
+                 <Award className="w-6 h-6 text-blue-600" /> Full Simulation
                </div>
-               <p className="text-slate-500 font-medium">No Retakes allowed</p>
-            </div>
+               <p className="text-slate-500 font-medium mb-4 italic text-sm">Total syllabus assessment.</p>
+               <div className="flex gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                 <span className="flex items-center gap-1"><Info className="w-3 h-3" /> 100 MCQs</span>
+                 <span className="flex items-center gap-1"><Timer className="w-3 h-3" /> 120 Mins</span>
+               </div>
+            </button>
           </div>
 
           <button 
             onClick={startExam}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-xl font-black text-xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+            disabled={loading || questions.length === 0}
+            className="bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white px-12 py-4 rounded-xl font-black text-xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
           >
-            Start Mock Exam
+            Start {examMode === 'mini' ? 'Mini Mock' : 'Full Exam'}
           </button>
         </motion.div>
       </div>

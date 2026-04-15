@@ -4,9 +4,10 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast, Toaster } from 'sonner'
-import { Loader2, ArrowRight, Sparkles, CheckCircle2, XCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Loader2, ArrowRight, Sparkles, CheckCircle2, XCircle, Clock, Zap, Pin, Eye, EyeOff, Lightbulb, BrainCircuit, MessageSquareQuote } from 'lucide-react'
 import { generateTopicMCQs } from '@/app/actions/ai-actions'
-import { recordQuizSession } from '@/app/actions/study-actions'
+import { recordQuizSession, generateExplanation, generateMnemonic } from '@/app/actions/study-actions'
 
 function QuizContent() {
   const [questions, setQuestions] = useState([])
@@ -14,11 +15,18 @@ function QuizContent() {
   const [selectedOption, setSelectedOption] = useState(null)
   const [isAnswered, setIsAnswered] = useState(false)
   const [score, setScore] = useState(0)
-  const [userAnswers, setUserAnswers] = useState([])
+  const [detailedAttempts, setDetailedAttempts] = useState([])
   const [startTime] = useState(Date.now())
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now())
   const [loading, setLoading] = useState(true)
+  const [loadingAi, setLoadingAi] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [quizFinished, setQuizFinished] = useState(false)
+  const [confidence, setConfidence] = useState('medium')
+  const [distractionFree, setDistractionFree] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [aiExplanation, setAiExplanation] = useState(null)
+  const [aiMnemonic, setAiMnemonic] = useState(null)
   
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -49,7 +57,6 @@ function QuizContent() {
     const { data, error } = await query
       
     if (!error && data && data.length > 0) {
-      // Shuffle questions to make it feel like a real quiz
       const shuffled = data.sort(() => 0.5 - Math.random())
       setQuestions(shuffled)
     }
@@ -86,10 +93,17 @@ function QuizContent() {
     
     setIsAnswered(true)
     const currentQ = questions[currentIndex]
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000)
     
-    // DB stores correct_answer as 'A', 'B', 'C', or 'D'
-    // Track answer
-    setUserAnswers(prev => [...prev, selectedOption])
+    setDetailedAttempts(prev => [...prev, {
+      questionId: currentQ.id,
+      topicId: currentQ.topic_id,
+      subjectId: currentQ.subject_id,
+      selectedAnswer: selectedOption,
+      correctAnswer: currentQ.correct_answer,
+      confidence,
+      timeTaken
+    }])
     
     if (selectedOption === currentQ.correct_answer) {
        setScore(prev => prev + 1)
@@ -97,26 +111,48 @@ function QuizContent() {
   }
 
   const handleNext = () => {
+    setSelectedOption(null)
+    setIsAnswered(false)
+    setConfidence('medium')
+    setAiExplanation(null)
+    setAiMnemonic(null)
+    setQuestionStartTime(Date.now())
+    setIsBookmarked(false)
+    
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1)
-      setSelectedOption(null)
-      setIsAnswered(false)
     } else {
       finishQuiz()
     }
+  }
+
+  const handleMagicExplanation = async () => {
+    setLoadingAi(true)
+    const result = await generateExplanation(questions[currentIndex].id)
+    if (result) {
+      setAiExplanation(result)
+    }
+    setLoadingAi(false)
+  }
+
+  const handleMagicMnemonic = async () => {
+    setLoadingAi(true)
+    const result = await generateMnemonic(questions[currentIndex].question.substring(0, 50))
+    if (result) {
+      setAiMnemonic(result)
+    }
+    setLoadingAi(false)
   }
 
    const finishQuiz = async () => {
     setLoading(true)
     const durationMinutes = Math.round((Date.now() - startTime) / 60000)
     
-    // Record complete session (attempts, SM-2, weak_topics, leaderboard)
     try {
       const result = await recordQuizSession({
         topicId,
         subjectId: questions[0]?.subject_id,
-        answers: userAnswers,
-        questions,
+        detailedAttempts,
         durationMinutes
       })
       if (result.success) {
@@ -207,7 +243,6 @@ function QuizContent() {
         : "border-slate-100 hover:border-blue-200 hover:bg-slate-50 text-slate-700")
     }
     
-    // Answered state — use correct_answer from DB
     if (letter === currentQ.correct_answer) {
        return base + "border-teal-500 bg-teal-50 text-teal-900"
     }
@@ -221,17 +256,22 @@ function QuizContent() {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
       
-      {/* Quiz Header */}
-      <div className="flex items-center justify-between mb-8 bg-white p-4 rounded-xl card-shadow border border-slate-100">
-        <div className="font-bold text-slate-600">Question {currentIndex + 1} of {questions.length}</div>
-        <div className="font-bold text-blue-600 flex items-center">
-           Score: {score}
+      {!distractionFree && (
+        <div className="flex items-center justify-between mb-8 bg-white p-4 rounded-xl card-shadow border border-slate-100 animate-in fade-in slide-in-from-top-2">
+          <div className="font-bold text-slate-600">Question {currentIndex + 1} of {questions.length}</div>
+          <div className="font-bold text-blue-600 flex items-center gap-4">
+             <div className="flex items-center gap-1.5 text-slate-400">
+               <Clock className="w-4 h-4" />
+               <span className="tabular-nums">
+                 {Math.round((Date.now() - questionStartTime) / 1000)}s
+               </span>
+             </div>
+             <span>Score: {score}</span>
+          </div>
         </div>
-      </div>
+      )}
       
-      {/* Question Card */}
       <div className="bg-white rounded-3xl p-8 md:p-10 card-shadow border border-slate-100 mb-6 relative overflow-hidden">
-        {/* Difficulty Badge */}
         <div className="absolute top-0 right-0 bg-slate-100 text-slate-500 text-xs font-bold px-3 py-1.5 rounded-bl-xl uppercase tracking-wider">
           {currentQ.difficulty || 'Medium'}
         </div>
@@ -239,6 +279,16 @@ function QuizContent() {
         <h1 className="text-xl md:text-2xl font-bold text-slate-900 leading-snug mb-8 mt-2">
           {currentQ.question}
         </h1>
+
+        {currentQ.has_image && currentQ.image_url && (
+          <div className="mb-8 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50">
+            <img 
+              src={currentQ.image_url} 
+              alt="Clinical Scenario" 
+              className="w-full h-auto max-h-[400px] object-contain mx-auto"
+            />
+          </div>
+        )}
         
         <div className="space-y-1">
           {['A', 'B', 'C', 'D'].map((letter) => {
@@ -264,7 +314,6 @@ function QuizContent() {
                  </div>
                  <span className="font-medium text-[15px]">{currentQ[key]}</span>
                  
-                 {/* Icons for Answered State */}
                  {isAnswered && letter === currentQ.correct_answer && (
                    <CheckCircle2 className="w-5 h-5 ml-auto text-teal-600 shrink-0" />
                  )}
@@ -277,14 +326,60 @@ function QuizContent() {
         </div>
       </div>
       
-      {/* Explanation Area (Shows only after answer) */}
       {isAnswered && (
         <div className={`p-6 rounded-2xl mb-6 border ${selectedOption === currentQ.correct_answer ? 'bg-teal-50 border-teal-100 text-teal-900' : 'bg-orange-50 border-orange-100 text-orange-900'}`}>
           <h3 className="font-bold flex items-center mb-2">
             {selectedOption === currentQ.correct_answer ? '✅ Correct!' : '❌ Incorrect.'} 
             <span className="ml-2 text-sm opacity-70">Explanation:</span>
           </h3>
-          <p className="text-sm md:text-[15px] leading-relaxed opacity-90">{currentQ.explanation}</p>
+          <p className="text-sm md:text-[15px] leading-relaxed opacity-90 mb-4">{currentQ.explanation}</p>
+          
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-teal-100">
+             {!aiExplanation && (
+               <button 
+                 onClick={handleMagicExplanation}
+                 disabled={loadingAi}
+                 className="flex items-center gap-2 px-4 py-2 bg-white text-teal-700 border border-teal-200 rounded-lg text-xs font-bold hover:bg-teal-100 transition-all disabled:opacity-50"
+               >
+                  {loadingAi ? <Loader2 className="w-3 h-3 animate-spin"/> : <Lightbulb className="w-3 h-3"/>}
+                  AI Deep Explanation
+               </button>
+             )}
+             {!aiMnemonic && (
+               <button 
+                 onClick={handleMagicMnemonic}
+                 disabled={loadingAi}
+                 className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold hover:bg-teal-700 transition-all shadow-sm disabled:opacity-50"
+               >
+                  {loadingAi ? <Loader2 className="w-3 h-3 animate-spin"/> : <BrainCircuit className="w-3 h-3"/>}
+                  Generate Mnemonic
+               </button>
+             )}
+          </div>
+
+          {aiExplanation && (
+            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+              <div className="flex items-center gap-2 text-blue-800 font-black text-xs uppercase mb-2">
+                 <MessageSquareQuote className="w-4 h-4" /> AI Insight
+              </div>
+              <p className="text-sm text-blue-900 leading-relaxed mb-3">{aiExplanation.explanation_correct}</p>
+              <div className="p-3 bg-white border border-blue-100 rounded-lg">
+                 <span className="text-xs font-bold text-blue-400 block mb-1">KEY TAKEAWAY</span>
+                 <p className="text-sm font-bold text-blue-900">{aiExplanation.key_takeaway}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {aiMnemonic && (
+            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-800 font-black text-xs uppercase mb-2">
+                 <Zap className="w-4 h-4" /> Memory Aid (Mnemonic)
+              </div>
+              <p className="text-lg font-black text-amber-900 tracking-wider mb-2">{aiMnemonic.mnemonic}</p>
+              <p className="text-xs text-amber-700 italic border-t border-amber-100 pt-2">{aiMnemonic.breakdown}</p>
+            </motion.div>
+          )}
+
           {currentQ.reference_book && (
              <p className="text-xs font-bold mt-4 opacity-60 uppercase tracking-widest flex items-center">
                Ref: {currentQ.reference_book}
@@ -293,25 +388,70 @@ function QuizContent() {
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex justify-end">
-        {!isAnswered ? (
-          <button
-            onClick={handleSubmit}
-            disabled={!selectedOption}
-            className="bg-slate-900 disabled:opacity-50 hover:bg-slate-800 text-white px-10 py-4 rounded-xl font-bold transition-all shadow-md"
-          >
-            Check Answer
-          </button>
-        ) : (
-          <button
-            onClick={handleNext}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-bold transition-all flex items-center gap-2 shadow-md shadow-blue-500/20"
-          >
-            {currentIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
-            <ArrowRight className="w-5 h-5" />
-          </button>
+      {/* Controls & Metrics */}
+      <div className="flex flex-col gap-6">
+        
+        {/* Confidence Selector — Only show before submitting */}
+        {!isAnswered && selectedOption && (
+          <div className="bg-white p-6 rounded-2xl card-shadow border border-slate-100 animate-in fade-in slide-in-from-bottom-2">
+            <h4 className="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-500" /> How confident are you?
+            </h4>
+            <div className="flex gap-3">
+              {['low', 'medium', 'high'].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setConfidence(c)}
+                  className={`flex-1 py-3 px-4 rounded-xl font-bold capitalize transition-all border-2 ${
+                    confidence === c
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-lg'
+                      : 'bg-white border-slate-100 text-slate-600 hover:border-slate-200'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
+
+        <div className="flex justify-between items-center bg-white p-4 rounded-2xl card-shadow border border-slate-100">
+           {/* Secondary Actions */}
+           <div className="flex gap-2">
+             <button 
+                onClick={() => setDistractionFree(!distractionFree)}
+                className={`p-3 rounded-xl transition-all ${distractionFree ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}
+                title={distractionFree ? "Normal Mode" : "Distraction-Free Mode"}
+             >
+               {distractionFree ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+             </button>
+             <button 
+                className={`p-3 rounded-xl transition-all ${isBookmarked ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}
+                onClick={() => setIsBookmarked(!isBookmarked)}
+             >
+               <Pin className="w-5 h-5" />
+             </button>
+           </div>
+
+           {/* Primary Button */}
+           {!isAnswered ? (
+             <button
+               onClick={handleSubmit}
+               disabled={!selectedOption}
+               className="bg-slate-900 disabled:opacity-50 hover:bg-slate-800 text-white px-10 py-4 rounded-xl font-bold transition-all shadow-md"
+             >
+               Check Answer
+             </button>
+           ) : (
+             <button
+               onClick={handleNext}
+               className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-xl font-bold transition-all flex items-center gap-2 shadow-md shadow-blue-500/20"
+             >
+               {currentIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+               <ArrowRight className="w-5 h-5" />
+             </button>
+           )}
+        </div>
       </div>
 
     </div>

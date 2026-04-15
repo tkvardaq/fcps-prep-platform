@@ -2,18 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { calculateSM2 } from '@/lib/study/spaced-repetition'
+import { generateContent } from '@/lib/ai/service'
 
 /**
  * Record a complete quiz session — saves user_attempts, user_sessions,
  * updates SM-2 revision queue, weak_topics, and leaderboard.
  */
-export async function recordQuizSession({ topicId, subjectId, answers, questions, durationMinutes }) {
+export async function recordQuizSession({ topicId, subjectId, detailedAttempts, durationMinutes }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   // 1. Create session record
-  const correctCount = answers.filter((a, i) => a === questions[i].correct_answer).length
+  const correctCount = detailedAttempts.filter(a => a.selectedAnswer === a.correctAnswer).length
+  const totalQuestions = detailedAttempts.length
+  
   const { data: session, error: sessionErr } = await supabase
     .from('user_sessions')
     .insert({
@@ -21,7 +24,7 @@ export async function recordQuizSession({ topicId, subjectId, answers, questions
       session_type: 'quiz',
       topic_id: topicId || null,
       subject_id: subjectId || null,
-      total_questions: questions.length,
+      total_questions: totalQuestions,
       correct_answers: correctCount,
       duration_minutes: durationMinutes || null
     })
@@ -34,13 +37,13 @@ export async function recordQuizSession({ topicId, subjectId, answers, questions
   }
 
   // 2. Insert individual attempts
-  const attemptRows = questions.map((q, i) => ({
+  const attemptRows = detailedAttempts.map((att) => ({
     user_id: user.id,
-    mcq_id: q.id,
-    topic_id: q.topic_id,
-    subject_id: q.subject_id,
-    selected_answer: answers[i] || null,
-    is_correct: answers[i] === q.correct_answer,
+    mcq_id: att.questionId,
+    topic_id: att.topicId,
+    subject_id: att.subjectId,
+    selected_answer: att.selectedAnswer || null,
+    is_correct: att.selectedAnswer === att.correctAnswer,
     session_id: session.id
   }))
 
@@ -48,12 +51,29 @@ export async function recordQuizSession({ topicId, subjectId, answers, questions
     .from('user_attempts')
     .insert(attemptRows)
 
+  // 2.1 Log errors specifically for the Error Logbook feature
+  const errorRows = detailedAttempts
+    .filter(att => att.selectedAnswer !== att.correctAnswer)
+    .map(att => ({
+      user_id: user.id,
+      question_id: att.questionId,
+      selected_answer: att.selectedAnswer,
+      correct_answer: att.correctAnswer,
+      confidence_level: att.confidence || 'medium',
+      time_taken: att.timeTaken || 0,
+      error_type: att.confidence === 'high' ? 'conceptual' : (att.confidence === 'low' ? 'guessed' : 'careless')
+    }))
+
+  if (errorRows.length > 0) {
+    await supabase.from('error_log').insert(errorRows)
+  }
+
   if (attemptsErr) {
     console.error('[recordQuizSession] attempts insert error:', attemptsErr)
   }
 
   // 3. Update SM-2 Revision Queue
-  const accuracy = Math.round((correctCount / questions.length) * 100)
+  const accuracy = Math.round((correctCount / totalQuestions) * 100)
   if (topicId) {
     await updateRevisionQueue(user.id, topicId, accuracy)
   }
@@ -68,8 +88,9 @@ export async function recordQuizSession({ topicId, subjectId, answers, questions
 
   return { 
     success: true, 
+    success: true, 
     score: correctCount, 
-    total: questions.length, 
+    total: totalQuestions, 
     accuracy,
     sessionId: session.id 
   }
@@ -395,4 +416,141 @@ async function updateLeaderboard(userId) {
       await supabase.from('leaderboard_cache').update({ rank: i + 1 }).eq('id', allUsers[i].id)
     }
   }
+}
+
+/**
+ * Fetch detailed performance analytics for the dashboard
+ */
+export async function getAnalyticsData() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    // 1. Accuracy Trend (Last 7 days)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    const { data: trendDataRaw } = await supabase
+      .from('user_attempts')
+      .select('timestamp, is_correct')
+      .eq('user_id', user.id)
+      .gte('timestamp', sevenDaysAgo.toISOString())
+      .order('timestamp', { ascending: true })
+
+    const trendMap = {}
+    trendDataRaw?.forEach(att => {
+      const day = new Date(att.timestamp).toLocaleDateString('en-US', { weekday: 'short' })
+      if (!trendMap[day]) trendMap[day] = { count: 0, correct: 0 }
+      trendMap[day].count++
+      if (att.is_correct) trendMap[day].correct++
+    })
+
+    const trendData = Object.entries(trendMap).map(([day, stats]) => ({
+      name: day,
+      accuracy: Math.round((stats.correct / stats.count) * 100)
+    }))
+
+    // 2. Topic Mastery (Success rate by subject)
+    const { data: masteryRaw } = await supabase
+      .from('user_attempts')
+      .select('is_correct, subjects(name)')
+      .eq('user_id', user.id)
+
+    const masteryMap = {}
+    masteryRaw?.forEach(att => {
+      const subName = att.subjects?.name || 'Misc'
+      if (!masteryMap[subName]) masteryMap[subName] = { count: 0, correct: 0 }
+      masteryMap[subName].count++
+      if (att.is_correct) masteryMap[subName].correct++
+    })
+
+    const masteryData = Object.entries(masteryMap)
+      .map(([name, stats]) => ({
+        subject: name,
+        score: Math.round((stats.correct / stats.count) * 100)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+
+    // 3. Retention (Based on SM-2 revision queue)
+    const { data: queue } = await supabase
+      .from('revision_queue')
+      .select('ease_factor')
+      .eq('user_id', user.id)
+
+    let retention = 0
+    if (queue && queue.length > 0) {
+      // Simple proxy: Average ease factor relative to 2.5 standard
+      const avgEase = queue.reduce((acc, curr) => acc + Number(curr.ease_factor), 0) / queue.length
+      retention = Math.min(100, Math.round((avgEase / 2.5) * 85)) // Max ~100%
+    }
+
+    return {
+      trendData: trendData || [],
+      masteryData: masteryData || [],
+      retention: retention || 0
+    }
+  } catch (error) {
+    console.error('[getAnalyticsData] Error:', error)
+    return { trendData: [], masteryData: [], retention: 0 }
+  }
+}
+
+/**
+ * Generate AI explanation for a specific question
+ */
+export async function generateExplanation(questionId) {
+  const supabase = await createClient()
+  
+  // Get question details
+  const { data: question } = await supabase
+    .from('mcqs')
+    .select('*, subjects(name), topics(name)')
+    .eq('id', questionId)
+    .single()
+
+  if (!question) return "Quality explanation pending..."
+
+  const prompt = `
+    Subject: ${question.subjects?.name}
+    Topic: ${question.topics?.name}
+    Question: ${question.question}
+    Options: A) ${question.option_a}, B) ${question.option_b}, C) ${question.option_c}, D) ${question.option_d}
+    Correct Answer: ${question.correct_answer}
+    
+    Task: Provide a concise, high-yield explanation for the correct answer and briefly mention why common distractors are wrong. 
+    Use a professional medical tone suitable for FCPS preparation.
+  `
+
+  const result = await generateContent({
+    cacheKey: `explanation-${questionId}`,
+    type: 'notes',
+    prompt,
+    jsonMode: false
+  })
+
+  return result.html
+}
+
+/**
+ * Generate a medical mnemonic for a topic or fact
+ */
+export async function generateMnemonic(text) {
+  const prompt = `
+    Context: Medical entrance exam (FCPS Part 1)
+    Target Fact: ${text}
+    
+    Task: Create a memorable, creative mnemonic for this fact. 
+    Format: The mnemonic phrase followed by what each letter stands for.
+  `
+
+  const result = await generateContent({
+    cacheKey: `mnemonic-${Buffer.from(text).toString('base64').substring(0, 50)}`,
+    type: 'notes',
+    prompt,
+    jsonMode: false
+  })
+
+  return result.html
 }
