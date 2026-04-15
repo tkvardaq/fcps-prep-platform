@@ -26,30 +26,33 @@ export default function MockExamPage() {
   const [examStarted, setExamStarted] = useState(false)
   const [stats, setStats] = useState({ score: 0, accuracy: 0, subjectBreakdown: [], weakAreas: [] })
   const [examMode, setExamMode] = useState('full') // 'mini' or 'full'
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [examFinished, setExamFinished] = useState(false)
   const examStartTimeRef = useRef(null)
 
   const supabase = createClient()
   const router = useRouter()
 
   useEffect(() => {
-  async function loadQuestions(mode = 'full') {
-    setLoading(true)
-    const limit = mode === 'mini' ? 20 : 100
-    const { data, error } = await supabase
-      .from('mcqs')
-      .select('*, subjects(name)')
-      .eq('is_published', true)
-      .limit(limit)
+    async function loadQuestions(mode = 'full') {
+      setLoading(true)
+      const limit = mode === 'mini' ? 20 : 100
+      const { data, error } = await supabase
+        .from('mcqs')
+        .select('*, subjects(name)')
+        .eq('is_published', true)
+        .limit(limit)
 
-    if (data && data.length > 0) {
-      setQuestions(data)
-      setTimeLeft(mode === 'mini' ? 25 * 60 : 120 * 60)
-    } else {
-      toast.error('Not enough MCQs found. Please seed more content.')
+      if (data && data.length > 0) {
+        setQuestions(data)
+        setTimeLeft(mode === 'mini' ? 25 * 60 : 120 * 60)
+      } else {
+        toast.error('Not enough MCQs found. Please seed more content.')
+      }
+      setLoading(false)
     }
-    setLoading(false)
-  }
-  }, [])
+    loadQuestions(examMode)
+  }, [examMode])
 
   useEffect(() => {
     let timer
