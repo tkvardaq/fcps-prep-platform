@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 export default function AuthLayout({ children }) {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
