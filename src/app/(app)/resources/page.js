@@ -1,7 +1,6 @@
 'use client'
 
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { BookOpen, FileText, Download, Target } from "lucide-react"
 
 const resources = [
@@ -61,22 +60,22 @@ export default function ResourcesPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {resources.map((resource, i) => (
-          <Card key={i} className="flex flex-col overflow-hidden border transition-all hover:shadow-md">
+          <div key={i} className="flex flex-col overflow-hidden border rounded-xl bg-card text-card-foreground shadow-sm transition-all hover:shadow-md">
             <div className={`p-6 flex justify-center items-center ${resource.color}`}>
               {resource.icon}
             </div>
-            <CardHeader className="flex-1">
+            <div className="flex-1 p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-xl mb-1">{resource.title}</CardTitle>
-                  <CardDescription>{resource.description}</CardDescription>
+                  <h3 className="text-xl font-semibold leading-none tracking-tight mb-1">{resource.title}</h3>
+                  <p className="text-sm text-muted-foreground">{resource.description}</p>
                 </div>
                 <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary/50 text-secondary-foreground">
                   {resource.type}
                 </span>
               </div>
-            </CardHeader>
-            <CardContent className="pt-0 pb-4">
+            </div>
+            <div className="pt-0 pb-6 px-6">
               <div className="flex gap-3 mt-4">
                 <a 
                   href={resource.link} 
@@ -94,8 +93,8 @@ export default function ResourcesPage() {
                   <Download className="h-4 w-4" />
                 </a>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     </div>

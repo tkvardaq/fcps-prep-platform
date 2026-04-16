@@ -157,7 +157,7 @@ async function processBatches() {
   const BATCH_SIZE = 10; // keep it low to prevent LLM timeouts/truncations
   let insertedCount = 0;
 
-  for (let i = 0; i < rawMcqs.length; i += BATCH_SIZE) {
+  for (let i = 10; i < rawMcqs.length; i += BATCH_SIZE) {
     console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(rawMcqs.length/BATCH_SIZE)}...`);
     const batch = rawMcqs.slice(i, i + BATCH_SIZE);
     
