@@ -17,6 +17,11 @@ Strict rules:
 - Difficulty distribution: 30% easy, 50% medium, 20% hard
 - question_type: 'factual' for direct recall, 'clinical_scenario' for patient cases, 'applied' for mechanism/reasoning questions
 
+CRITICAL QUALITY RULES:
+1. RANDOMIZE the correct answer letter (A, B, C, or D). Ensure a roughly even distribution across the 20 questions.
+2. DISTRACTORS must be plausible medical findings, not obvious "filler" text.
+3. Ensure no two questions are identical in logic.
+
 Return ONLY a valid JSON array. No markdown. No extra text.
 Each object must have exactly these fields:
 {"question":"","option_a":"","option_b":"","option_c":"","option_d":"","correct_answer":"A","explanation":"","difficulty":"easy","question_type":"factual","reference_book":""}
@@ -44,7 +49,7 @@ Base everything strictly on ${references}. Do not include unverified or speculat
 Return as clean HTML (use h2, h3, ul, li, table, strong tags only). Do NOT wrap the result in JSON, just return raw HTML.
 `
 
-export const getStudyPlanPrompt = (date, hours, focus, weakSubjects, strongSubjects) => `
+export const getStudyPlanPrompt = (date, hours, focus, weakSubjects, strongSubjects, availableSubjects) => `
 Create a day-by-day FCPS Part 1 Gynae/Obs study schedule.
 
 Student details:
@@ -53,6 +58,7 @@ Student details:
 - Paper focus: ${focus}
 - Weak subjects (needs 40% more time): ${weakSubjects}
 - Strong subjects (can revise faster): ${strongSubjects}
+- Available subjects to choose from ONLY (DO NOT MAKE UP OTHERS): ${availableSubjects}
 
 Rules:
 - First 60% of days: learning phase (cover all topics systematically)

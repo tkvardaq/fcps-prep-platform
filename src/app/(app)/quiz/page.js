@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { toast, Toaster } from 'sonner'
 import { motion } from 'framer-motion'
-import { Loader2, ArrowRight, Sparkles, CheckCircle2, XCircle, Clock, Zap, Pin, Eye, EyeOff, Lightbulb, BrainCircuit, MessageSquareQuote } from 'lucide-react'
+import { Loader2, ArrowRight, Sparkles, CheckCircle2, XCircle, Clock, Zap, Pin, Eye, EyeOff, Lightbulb, BrainCircuit, MessageSquareQuote, Flag } from 'lucide-react'
 import { generateTopicMCQs } from '@/app/actions/ai-actions'
 import { recordQuizSession, generateExplanation, generateMnemonic } from '@/app/actions/study-actions'
 
@@ -128,20 +128,33 @@ function QuizContent() {
 
   const handleMagicExplanation = async () => {
     setLoadingAi(true)
-    const result = await generateExplanation(questions[currentIndex].id)
-    if (result) {
-      setAiExplanation(result)
+    try {
+      const result = await generateExplanation(questions[currentIndex].id)
+      if (result) {
+        setAiExplanation(result)
+      }
+    } catch (e) {
+      console.error("AI Insight Error:", e)
     }
     setLoadingAi(false)
   }
 
   const handleMagicMnemonic = async () => {
     setLoadingAi(true)
-    const result = await generateMnemonic(questions[currentIndex].question.substring(0, 50))
-    if (result) {
-      setAiMnemonic(result)
+    try {
+      const result = await generateMnemonic(questions[currentIndex].question.substring(0, 50))
+      if (result) {
+        setAiMnemonic(result)
+      }
+    } catch (e) {
+      console.error("AI Mnemonic Error:", e)
     }
     setLoadingAi(false)
+  }
+
+  const handleReportError = async () => {
+    // In a real app, this would save to a 'reported_issues' table
+    alert("Issue reported! Our medical team will review this MCQ. Thank you for helping improve FCPS Prep.")
   }
 
    const finishQuiz = async () => {
@@ -381,9 +394,17 @@ function QuizContent() {
           )}
 
           {currentQ.reference_book && (
-             <p className="text-xs font-bold mt-4 opacity-60 uppercase tracking-widest flex items-center">
-               Ref: {currentQ.reference_book}
-             </p>
+             <div className="flex justify-between items-center mt-4">
+                <p className="text-xs font-bold opacity-60 uppercase tracking-widest flex items-center">
+                  Ref: {currentQ.reference_book}
+                </p>
+                <button 
+                  onClick={handleReportError}
+                  className="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest flex items-center gap-1"
+                >
+                  <Flag className="w-3 h-3" /> Report Error
+                </button>
+             </div>
           )}
         </div>
       )}

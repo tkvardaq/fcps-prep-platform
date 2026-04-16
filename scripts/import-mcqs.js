@@ -1,168 +1,157 @@
-const fs = require('fs')
-const path = require('path')
-const Papa = require('papaparse')
-const { createClient } = require('@supabase/supabase-js')
+/**
+ * Database Migration Script: CSV to Supabase
+ * Performs a clean wipe and re-imports the verified MCQ dataset.
+ */
 
-// 1. Manually load environment variables from .env.local
-const envPath = path.resolve(process.cwd(), '.env.local')
-const envConfig = fs.readFileSync(envPath, 'utf8')
-envConfig.split('\n').forEach((line) => {
-  const match = line.match(/^([^=]+)=(.*)$/)
-  if (match) {
-    process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '')
-  }
-})
+const fs = require('fs');
+const path = require('path');
+const Papa = require('papaparse');
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
 
-// 2. Initialize Supabase Client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing SUPABASE URL or KEY in .env.local!")
-  process.exit(1)
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables. Please check .env.local');
+  process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Memory Cache for lookups
-const subjectCache = {}
-const topicCache = {}
+async function migrate() {
+  console.log('🚀 Starting Database Migration...');
 
-async function getOrCreateSubject(subjectName, paperNumber) {
-  const key = subjectName.trim().toLowerCase()
-  if (subjectCache[key]) return subjectCache[key]
+  try {
+    // 1. Wipe existing data (Order matters due to FKs)
+    console.log('🧹 Wiping existing data...');
+    
+    // Low-level deletes to be fast
+    const tablesToWipe = [
+      'user_attempts',
+      'user_sessions',
+      'mock_exams',
+      'revision_queue',
+      'weak_topics',
+      'bookmarks',
+      'notes',
+      'mcq_discussions',
+      'mcqs',
+      'topics',
+      'subjects'
+    ];
 
-  let { data, error } = await supabase
-    .from('subjects')
-    .select('*')
-    .ilike('name', subjectName.trim())
-    .single()
+    for (const table of tablesToWipe) {
+      const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      if (error) {
+        console.warn(`⚠️ Warning: Could not wipe ${table}:`, error.message);
+      } else {
+        console.log(`✅ Table ${table} wiped.`);
+      }
+    }
 
-  if (error && error.code !== 'PGRST116') {
-    throw error
-  }
+    // 2. Read CSV
+    console.log('📖 Reading CSV file...');
+    const csvPath = path.join(__dirname, '../fcps_mcqs_final.csv');
+    const csvFile = fs.readFileSync(csvPath, 'utf8');
+    
+    const { data: records, errors } = Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true
+    });
 
-  if (data) {
-    subjectCache[key] = data.id
-    return data.id
-  }
+    if (errors.length > 0) {
+      console.warn('⚠️ CSV Parsing Errors:', errors);
+    }
 
-  // Create new subject
-  const { data: newSub, error: subErr } = await supabase
-    .from('subjects')
-    .insert([{ 
-      name: subjectName.trim(), 
-      description: `Course material for ${subjectName}`,
-      paper_number: parseInt(paperNumber) || 1
-    }])
-    .select()
-    .single()
+    console.log(`📊 Found ${records.length} records in CSV.`);
 
-  if (subErr) throw subErr
-  subjectCache[key] = newSub.id
-  return newSub.id
-}
+    // 3. Process Subjects and Topics first
+    const subjectsMap = new Map();
+    const topicsMap = new Map();
 
-async function getOrCreateTopic(topicName, subjectId) {
-  const key = `${topicName.trim().toLowerCase()}-${subjectId}`
-  if (topicCache[key]) return topicCache[key]
+    console.log('🏗️ Processing Subjects and Topics...');
+    
+    for (const record of records) {
+      const subjectName = record.Subject?.trim();
+      const topicName = record.Topic?.trim();
 
-  let { data, error } = await supabase
-    .from('topics')
-    .select('*')
-    .eq('subject_id', subjectId)
-    .ilike('name', topicName.trim())
-    .single()
-
-  if (error && error.code !== 'PGRST116') {
-    throw error
-  }
-
-  if (data) {
-    topicCache[key] = data.id
-    return data.id
-  }
-
-  // Create new topic
-  const { data: newTop, error: topErr } = await supabase
-    .from('topics')
-    .insert([{ 
-      subject_id: subjectId,
-      name: topicName.trim(),
-      description: `Syllabus topic: ${topicName}`
-    }])
-    .select()
-    .single()
-
-  if (topErr) throw topErr
-  topicCache[key] = newTop.id
-  return newTop.id
-}
-
-async function run() {
-  const fileArg = process.argv[2]
-  if (!fileArg) {
-    console.error('Usage: node scripts/import-mcqs.js <path-to-csv>')
-    process.exit(1)
-  }
-
-  const csvPath = path.resolve(process.cwd(), fileArg)
-  console.log(`Reading CSV from ${csvPath}...`)
-
-  const fileContent = fs.readFileSync(csvPath, 'utf8')
-
-  Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-    complete: async (results) => {
-      console.log(`✅ Parsed ${results.data.length} rows. Uploading to Supabase...`)
-      let successCount = 0
-      let errorCount = 0
-
-      for (const row of results.data) {
-        try {
-          if (!row.Question || !row.Subject) continue; // skip invalid rows
-
-          // 1. Resolve UUIDs (Auto-create if missing)
-          const subjectId = await getOrCreateSubject(row.Subject, row['Paper Number'])
-          const topicId = await getOrCreateTopic(row.Topic, subjectId)
-
-          // 2. Insert MCQ
-          const mcqPayload = {
-            subject_id: subjectId,
-            topic_id: topicId,
-            paper_number: parseInt(row['Paper Number']) || 1,
-            question: row.Question.trim(),
-            option_a: row['Option A'].trim(),
-            option_b: row['Option B'].trim(),
-            option_c: row['Option C'].trim(),
-            option_d: row['Option D'].trim(),
-            correct_answer: row['Correct Answer'].toUpperCase().trim(),
-            explanation: row.Explanation ? row.Explanation.trim() : 'No explanation provided.',
-            difficulty: row.Difficulty ? row.Difficulty.toLowerCase().trim() : 'medium',
-            reference_book: row['Reference Book'] ? row['Reference Book'].trim() : 'Standard Textbook',
-            question_type: 'clinical_scenario',
-            is_published: true
-          }
-
-          const { error } = await supabase.from('mcqs').insert([mcqPayload])
-          if (error) {
-            console.error(`❌ DB Insert Error for question "${row.Question.substring(0, 30)}...":`, error.message)
-            errorCount++
-          } else {
-            successCount++
-            process.stdout.write(`✅ `)
-          }
-
-        } catch (err) {
-          console.error(`\n❌ Error processing row:`, err.message)
-          errorCount++
+      if (subjectName && !subjectsMap.has(subjectName)) {
+        const { data, error } = await supabase
+          .from('subjects')
+          .insert({ name: subjectName })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error(`❌ Error inserting subject ${subjectName}:`, error);
+          continue;
         }
+        subjectsMap.set(subjectName, data.id);
       }
 
-      console.log(`\n\n🎉 Import Complete! Successfully added ${successCount} MCQs. Failed: ${errorCount}.`)
+      const subjectId = subjectsMap.get(subjectName);
+      const topicKey = `${subjectId}_${topicName}`;
+
+      if (topicName && subjectId && !topicsMap.has(topicKey)) {
+        const { data, error } = await supabase
+          .from('topics')
+          .insert({ name: topicName, subject_id: subjectId })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error(`❌ Error inserting topic ${topicName}:`, error);
+          continue;
+        }
+        topicsMap.set(topicKey, data.id);
+      }
     }
-  })
+
+    // 4. Batch Insert MCQs
+    console.log('📥 Inserting MCQs in batches...');
+    const batchSize = 100;
+    const mcqsToInsert = [];
+
+    for (const record of records) {
+      const subjectId = subjectsMap.get(record.Subject?.trim());
+      const topicId = topicsMap.get(`${subjectId}_${record.Topic?.trim()}`);
+
+      if (!subjectId || !topicId) continue;
+
+      mcqsToInsert.push({
+        subject_id: subjectId,
+        topic_id: topicId,
+        paper_number: parseInt(record['Paper Number']) || 1,
+        question: record.Question,
+        options: [
+          record['Option A'],
+          record['Option B'],
+          record['Option C'],
+          record['Option D']
+        ],
+        correct_answer: record['Correct Answer'], // 'A', 'B', 'C', or 'D'
+        explanation: record.Explanation,
+        difficulty: (record.Difficulty || 'Medium').charAt(0).toUpperCase() + (record.Difficulty || 'Medium').slice(1).toLowerCase(),
+        reference: record['Reference Book']
+      });
+    }
+
+    for (let i = 0; i < mcqsToInsert.length; i += batchSize) {
+      const batch = mcqsToInsert.slice(i, i + batchSize);
+      const { error } = await supabase.from('mcqs').insert(batch);
+      
+      if (error) {
+        console.error(`❌ Error inserting batch starting at ${i}:`, error);
+      } else {
+        console.log(`✅ Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(mcqsToInsert.length / batchSize)}`);
+      }
+    }
+
+    console.log('🎉 Migration Completed Successfully!');
+  } catch (err) {
+    console.error('💥 Migration Failed:', err);
+  }
 }
 
-run()
+migrate();

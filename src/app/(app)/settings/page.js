@@ -6,6 +6,8 @@ import { Toaster, toast } from 'sonner'
 import { User, Bell, Shield, LogOut, Loader2, Save, Terminal, Sparkles } from 'lucide-react'
 import { seedInitialMCQs } from '@/app/actions/seed-actions'
 import { useRouter } from 'next/navigation'
+import { clearUserProgress, syncDatabase } from '@/app/actions/dev-actions'
+
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({
@@ -199,6 +201,57 @@ export default function SettingsPage() {
                   <button className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold transition-colors">
                     Update Preferences
                   </button>
+                </div>
+             </div>
+           )}
+           
+           {activeTab === 'dev' && (
+             <div className="bg-white rounded-3xl p-8 card-shadow border border-slate-100">
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Developer Tools</h2>
+                <p className="text-slate-500 mb-8">System maintenance and data synchronization tools.</p>
+                
+                <div className="space-y-6">
+                   <div className="p-6 border border-slate-100 bg-slate-50 rounded-2xl">
+                     <div className="flex items-start justify-between">
+                       <div>
+                         <h4 className="font-bold text-slate-900">Sync MCQ Database</h4>
+                         <p className="text-sm text-slate-500 mt-1">Re-align database with the latest verified MCQ dataset from CSV.</p>
+                       </div>
+                       <button 
+                         onClick={async () => {
+                           const res = await syncDatabase()
+                           if (res.info) toast.info(res.info)
+                         }}
+                         className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-all flex items-center gap-2"
+                       >
+                         <Sparkles className="w-4 h-4" /> Sync Now
+                       </button>
+                     </div>
+                   </div>
+
+                   <div className="p-6 border border-red-50 bg-red-50/30 rounded-2xl">
+                     <div className="flex items-start justify-between">
+                       <div>
+                         <h4 className="font-bold text-red-900">Clear All Progress</h4>
+                         <p className="text-sm text-red-700 mt-1">Reset all your attempts, sessions, weak areas, and bookmarks. This cannot be undone.</p>
+                       </div>
+                       <button 
+                         onClick={async () => {
+                           if (confirm('Are you ABSOLUTELY sure? All your progress will be permanently deleted.')) {
+                             const res = await clearUserProgress()
+                             if (res.success) {
+                               toast.success('Your progress has been cleared.')
+                             } else {
+                               toast.error('Failed to clear progress')
+                             }
+                           }
+                         }}
+                         className="px-4 py-2 bg-white text-red-600 border border-red-200 rounded-lg text-sm font-bold hover:bg-red-50 transition-all"
+                       >
+                         Clear Everything
+                       </button>
+                     </div>
+                   </div>
                 </div>
              </div>
            )}

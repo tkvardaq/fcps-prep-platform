@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, BrainCircuit, Calendar, LineChart, Trophy, FileText, Settings, Award, GraduationCap, StickyNote } from 'lucide-react'
+import { LayoutDashboard, BookOpen, BrainCircuit, Calendar, LineChart, Trophy, FileText, Settings, Award, GraduationCap, StickyNote, Library } from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { name: 'Revision', href: '/revision', icon: FileText },
   { name: 'Progress', href: '/progress', icon: LineChart },
   { name: 'Notebook', href: '/notebook', icon: StickyNote },
+  { name: 'Library', href: '/resources', icon: Library },
   { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
 ]
 

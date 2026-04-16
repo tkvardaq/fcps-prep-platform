@@ -28,7 +28,10 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
     return { success: false, error: 'Not authenticated' }
   }
   
-  const prompt = getStudyPlanPrompt(examDate, dailyHours, paperFocus, weakSubjects.join(', '), strongSubjects.join(', '))
+  const { data: allSubjectsRaw } = await supabase.from('subjects').select('name')
+  const availableSubjects = allSubjectsRaw ? allSubjectsRaw.map(s => s.name).join(', ') : 'Anatomy, Physiology, Pathology, Medicine, Surgery'
+  
+  const prompt = getStudyPlanPrompt(examDate, dailyHours, paperFocus, weakSubjects.join(', '), strongSubjects.join(', '), availableSubjects)
   
   try {
     const contentJson = await generateContent({
@@ -59,26 +62,45 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
       const { data: allSubjects } = await supabase.from('subjects').select('id, name')
       const { data: allTopics } = await supabase.from('topics').select('id, name, subject_id')
       
-      const subjectNameMap = {}
-      allSubjects?.forEach(s => { subjectNameMap[s.name.toLowerCase()] = s.id })
-      
-      const topicNameMap = {}
-      allTopics?.forEach(t => { topicNameMap[t.name.toLowerCase()] = { id: t.id, subject_id: t.subject_id } })
-
       // Clear old schedule for this user
       await supabase.from('study_schedule').delete().eq('user_id', user.id)
 
       const scheduleRows = planArray
         .map(entry => {
-          const subjectId = subjectNameMap[entry.subject_name?.toLowerCase()] || null
-          const topicMatch = topicNameMap[entry.topic_name?.toLowerCase()] || null
+          if(!entry.subject_name) return null;
+          // Fuzzy match subject
+          let subject = allSubjects?.find(s => s.name.toLowerCase() === entry.subject_name.toLowerCase())
+          if (!subject) {
+             subject = allSubjects?.find(s => s.name.toLowerCase().includes(entry.subject_name.toLowerCase()) || entry.subject_name.toLowerCase().includes(s.name.toLowerCase()))
+          }
+          if (!subject) subject = allSubjects?.[Math.floor(Math.random() * allSubjects.length)]
           
-          if (!subjectId || !topicMatch) return null
+          if (!subject) return null; // Very unlikely
+
+          // Match topic
+          let topicMatch = null;
+          if (entry.topic_name) {
+              topicMatch = allTopics?.find(t => t.name.toLowerCase() === entry.topic_name.toLowerCase() && t.subject_id === subject.id)
+              if (!topicMatch) {
+                  topicMatch = allTopics?.find(t => (t.name.toLowerCase().includes(entry.topic_name.toLowerCase()) || entry.topic_name.toLowerCase().includes(t.name.toLowerCase())) && t.subject_id === subject.id)
+              }
+          }
+          // Fallback: pick any topic from this subject
+          if (!topicMatch) {
+              const subTopics = allTopics?.filter(t => t.subject_id === subject.id) || [];
+              if (subTopics.length > 0) {
+                  topicMatch = subTopics[Math.floor(Math.random() * subTopics.length)]
+              } else {
+                  topicMatch = allTopics?.[Math.floor(Math.random() * allTopics.length)]
+              }
+          }
+          
+          if (!topicMatch) return null
           
           return {
             user_id: user.id,
             scheduled_date: entry.date,
-            subject_id: subjectId,
+            subject_id: subject.id,
             topic_id: topicMatch.id,
             hours_allocated: entry.hours_allocated || 2,
             task_type: entry.task_type || 'learn',

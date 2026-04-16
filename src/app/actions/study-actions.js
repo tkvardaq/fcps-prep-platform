@@ -510,7 +510,7 @@ export async function generateExplanation(questionId) {
     .eq('id', questionId)
     .single()
 
-  if (!question) return "Quality explanation pending..."
+  if (!question) return { explanation_correct: "Explanation unavailable.", key_takeaway: "" }
 
   const prompt = `
     Subject: ${question.subjects?.name}
@@ -521,16 +521,19 @@ export async function generateExplanation(questionId) {
     
     Task: Provide a concise, high-yield explanation for the correct answer and briefly mention why common distractors are wrong. 
     Use a professional medical tone suitable for FCPS preparation.
+    
+    Return EXACTLY a JSON object with this format:
+    {"explanation_correct": "detailed text explaining the logic", "key_takeaway": "one sentence summarizing the most important fact to remember"}
   `
 
   const result = await generateContent({
     cacheKey: `explanation-${questionId}`,
     type: 'notes',
     prompt,
-    jsonMode: false
+    jsonMode: true
   })
 
-  return result.html
+  return result
 }
 
 /**
@@ -543,14 +546,17 @@ export async function generateMnemonic(text) {
     
     Task: Create a memorable, creative mnemonic for this fact. 
     Format: The mnemonic phrase followed by what each letter stands for.
+    
+    Return EXACTLY a JSON object with this format:
+    {"mnemonic": "your acronym or phrase here", "breakdown": "what each letter stands for"}
   `
 
   const result = await generateContent({
     cacheKey: `mnemonic-${Buffer.from(text).toString('base64').substring(0, 50)}`,
     type: 'notes',
     prompt,
-    jsonMode: false
+    jsonMode: true
   })
 
-  return result.html
+  return result
 }

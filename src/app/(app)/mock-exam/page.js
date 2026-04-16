@@ -34,7 +34,7 @@ export default function MockExamPage() {
   const [stats, setStats] = useState({ score: 0, accuracy: 0, subjectBreakdown: [], weakAreas: [] })
   const [examMode, setExamMode] = useState('full') // 'mini' or 'full'
   const [paperFilter, setPaperFilter] = useState(0) // 0 = both, 1 = paper1, 2 = paper2
-  const [timeLeft, setTimeLeft] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(null)
   const [examFinished, setExamFinished] = useState(false)
   const examStartTimeRef = useRef(null)
 
@@ -60,7 +60,9 @@ export default function MockExamPage() {
         // Shuffle questions
         const shuffled = data.sort(() => Math.random() - 0.5)
         setQuestions(shuffled)
-        setTimeLeft(examMode === 'mini' ? 25 * 60 : 120 * 60)
+        // Set time based on mode (min 1 second to avoid instant finish)
+        const initialTime = examMode === 'mini' ? 25 * 60 : 120 * 60
+        setTimeLeft(initialTime)
       } else {
         toast.error('Not enough MCQs found for this selection.')
       }
@@ -71,11 +73,11 @@ export default function MockExamPage() {
 
   useEffect(() => {
     let timer
-    if (examStarted && !examFinished && timeLeft > 0) {
+    if (examStarted && !examFinished && timeLeft !== null && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft(prev => prev - 1)
       }, 1000)
-    } else if (timeLeft === 0) {
+    } else if (examStarted && !examFinished && timeLeft === 0) {
       finishExam()
     }
     return () => clearInterval(timer)

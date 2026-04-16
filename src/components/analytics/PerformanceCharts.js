@@ -8,7 +8,7 @@ import { TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-reac
 import { motion } from 'framer-motion'
 
 export function AccuracyTrend({ data }) {
-  // data: [{ date: '2024-04-01', accuracy: 65 }, ...]
+  // data: [{ name: 'Mon', accuracy: 65 }, ...]
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -21,7 +21,7 @@ export function AccuracyTrend({ data }) {
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
           <XAxis 
-            dataKey="date" 
+            dataKey="name" 
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: '#94a3b8', fontSize: 12 }} 
@@ -50,14 +50,14 @@ export function AccuracyTrend({ data }) {
 }
 
 export function TopicMastery({ data }) {
-  // data: [{ topic: 'Anatomy', score: 80 }, ...]
+  // data: [{ subject: 'Anatomy', score: 80 }, ...]
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical">
           <XAxis type="number" hide />
           <YAxis 
-            dataKey="topic" 
+            dataKey="subject" 
             type="category" 
             axisLine={false} 
             tickLine={false} 
