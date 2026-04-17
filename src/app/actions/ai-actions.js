@@ -62,6 +62,29 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
       const { data: allSubjects } = await supabase.from('subjects').select('id, name')
       const { data: allTopics } = await supabase.from('topics').select('id, name, subject_id')
       
+      // If AI returned too few entries, supplement with deterministic plan
+      if (planArray.length < 14 && allSubjects?.length > 0) {
+        const taskTypes = ['learn', 'learn', 'learn', 'learn', 'learn', 'learn', 'learn', 'learn', 'revise', 'revise', 'revise', 'revise', 'mock', 'mock']
+        for (let d = 0; d < 14; d++) {
+          const dt = new Date()
+          dt.setDate(dt.getDate() + d)
+          const dateStr = dt.toISOString().split('T')[0]
+          // Check if this date already has entries
+          const hasDate = planArray.some(e => e.date === dateStr)
+          if (!hasDate) {
+            const subj = allSubjects[d % allSubjects.length]
+            planArray.push({
+              date: dateStr,
+              subject_name: subj.name,
+              topic_name: 'General',
+              task_type: taskTypes[d] || 'learn',
+              hours_allocated: dailyHours ? Math.round(dailyHours / 2) : 2,
+              paper_number: 1
+            })
+          }
+        }
+      }
+
       // Clear old schedule for this user
       await supabase.from('study_schedule').delete().eq('user_id', user.id)
 
@@ -79,7 +102,7 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
 
           // Match topic
           let topicMatch = null;
-          if (entry.topic_name) {
+          if (entry.topic_name && entry.topic_name !== 'General') {
               topicMatch = allTopics?.find(t => t.name.toLowerCase() === entry.topic_name.toLowerCase() && t.subject_id === subject.id)
               if (!topicMatch) {
                   topicMatch = allTopics?.find(t => (t.name.toLowerCase().includes(entry.topic_name.toLowerCase()) || entry.topic_name.toLowerCase().includes(t.name.toLowerCase())) && t.subject_id === subject.id)

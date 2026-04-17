@@ -49,25 +49,29 @@ Base everything strictly on ${references}. Do not include unverified or speculat
 Return as clean HTML (use h2, h3, ul, li, table, strong tags only). Do NOT wrap the result in JSON, just return raw HTML.
 `
 
-export const getStudyPlanPrompt = (date, hours, focus, weakSubjects, strongSubjects, availableSubjects) => `
-Create a day-by-day FCPS Part 1 Gynae/Obs study schedule.
+export const getStudyPlanPrompt = (date, hours, focus, weakSubjects, strongSubjects, availableSubjects) => {
+  const today = new Date().toISOString().split('T')[0]
+  return `Create a 14-day FCPS Part 1 study schedule starting from ${today}.
 
 Student details:
 - Exam date: ${date}
 - Study hours per day: ${hours}
 - Paper focus: ${focus}
-- Weak subjects (needs 40% more time): ${weakSubjects}
-- Strong subjects (can revise faster): ${strongSubjects}
-- Available subjects to choose from ONLY (DO NOT MAKE UP OTHERS): ${availableSubjects}
+- Weak subjects (allocate MORE time): ${weakSubjects || 'None specified'}
+- Strong subjects (can revise faster): ${strongSubjects || 'None specified'}
+- YOU MUST ONLY USE THESE EXACT SUBJECT NAMES: ${availableSubjects}
 
-Rules:
-- First 60% of days: learning phase (cover all topics systematically)
-- Next 25% of days: revision phase (spaced repetition)
-- Last 15% of days: mock exam phase only (no new topics)
-- Sundays: always mock exam day
-- Weak subjects appear more frequently throughout
-- Interleave Paper 1 and Paper 2 subjects (don't do all of one paper first)
+CRITICAL RULES:
+1. Generate EXACTLY 28 entries (2 per day for 14 days)
+2. subject_name MUST be one of the exact names from the available subjects list above
+3. Start dates from ${today}, increment by 1 day
+4. Days 1-8: task_type = "learn"
+5. Days 9-12: task_type = "revise"
+6. Days 13-14: task_type = "mock"
+7. Distribute weak subjects across MORE days
+8. hours_allocated should be ${Math.round(hours/2)} per entry (2 entries per day)
 
-Return ONLY valid JSON array. Each object:
-{"date":"YYYY-MM-DD","subject_name":"","topic_name":"","task_type":"learn|revise|mock","hours_allocated":4,"paper_number":1}
+Return ONLY a valid JSON array. No markdown. No extra text.
+Each object: {"date":"YYYY-MM-DD","subject_name":"EXACT_NAME","topic_name":"General","task_type":"learn","hours_allocated":${Math.round(hours/2)},"paper_number":1}
 `
+}
