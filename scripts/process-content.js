@@ -200,7 +200,7 @@ async function processBatches() {
             option_d: enriched.option_d || "N/A",
             option_e: enriched.option_e || null,
             correct_answer: batch[j].correct_answer,
-            explanation: enriched.explanation,
+            explanation: enriched.explanation || "No explanation provided.",
             reference_book: "SK Pink / Rafi",
             difficulty: enriched.difficulty || "medium",
             is_published: true
