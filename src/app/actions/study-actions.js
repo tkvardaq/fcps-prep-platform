@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { calculateSM2 } from '@/lib/study/spaced-repetition'
+import { calculateSM2, calculateSM2FromQuality } from '@/lib/study/spaced-repetition'
 import { generateContent } from '@/lib/ai/service'
 
 /**
@@ -35,6 +35,26 @@ export async function recordQuizSession({ topicId, subjectId, detailedAttempts, 
     console.error('[recordQuizSession] session insert error:', sessionErr)
     return { success: false, error: sessionErr.message }
   }
+
+  // 1b. Calculate Session Quality for Spaced Repetition
+  let totalQuality = 0
+  detailedAttempts.forEach(att => {
+    const isCorrect = att.selectedAnswer === att.correctAnswer
+    const confidence = att.confidence || 'medium'
+    
+    let q = 0
+    if (isCorrect) {
+      if (confidence === 'high') q = 5
+      else if (confidence === 'medium') q = 4
+      else q = 3
+    } else {
+      if (confidence === 'high') q = 2
+      else if (confidence === 'medium') q = 1
+      else q = 0
+    }
+    totalQuality += q
+  })
+  const sessionQuality = totalQuestions > 0 ? totalQuality / totalQuestions : 0
 
   // 2. Insert individual attempts
   const attemptRows = detailedAttempts.map((att) => ({
@@ -75,7 +95,7 @@ export async function recordQuizSession({ topicId, subjectId, detailedAttempts, 
   // 3. Update SM-2 Revision Queue
   const accuracy = Math.round((correctCount / totalQuestions) * 100)
   if (topicId) {
-    await updateRevisionQueue(user.id, topicId, accuracy)
+    await updateRevisionQueue(user.id, topicId, accuracy, sessionQuality)
   }
 
   // 4. Update weak_topics
@@ -271,7 +291,7 @@ export async function markScheduleComplete(scheduleId) {
 
 // ─── Internal Helpers ────────────────────────────────────────
 
-async function updateRevisionQueue(userId, topicId, accuracy) {
+async function updateRevisionQueue(userId, topicId, accuracy, quality = null) {
   const supabase = await createClient()
 
   // Check if entry exists
@@ -282,12 +302,22 @@ async function updateRevisionQueue(userId, topicId, accuracy) {
     .eq('topic_id', topicId)
     .single()
 
-  const sm2 = calculateSM2(
-    accuracy,
-    existing?.interval_days || 0,
-    existing?.ease_factor ? Number(existing.ease_factor) : 2.5,
-    existing?.repetition_number || 0
-  )
+  let sm2;
+  if (quality !== null) {
+    sm2 = calculateSM2FromQuality(
+      quality,
+      existing?.interval_days || 0,
+      existing?.ease_factor ? Number(existing.ease_factor) : 2.5,
+      existing?.repetition_number || 0
+    )
+  } else {
+    sm2 = calculateSM2(
+      accuracy,
+      existing?.interval_days || 0,
+      existing?.ease_factor ? Number(existing.ease_factor) : 2.5,
+      existing?.repetition_number || 0
+    )
+  }
 
   if (existing) {
     await supabase.from('revision_queue').update({

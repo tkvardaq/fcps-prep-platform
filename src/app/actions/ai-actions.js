@@ -20,7 +20,7 @@ export async function generateDiagnosticMCQs() {
   return { success: true, mcqs }
 }
 
-export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSubjects, strongSubjects) {
+export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSubjects, strongSubjects, forceRefresh = false) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
@@ -39,6 +39,7 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
       type: 'study_plan',
       prompt: prompt,
       jsonMode: true,
+      forceRefresh: forceRefresh
     })
     
     // contentJson is already parsed by the service

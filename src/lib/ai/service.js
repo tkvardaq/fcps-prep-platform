@@ -8,11 +8,11 @@ const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY })
 /**
  * Core AI Service that handles caching, Gemini rate limits, and Mistral fallback
  */
-export async function generateContent({ cacheKey, type, prompt, jsonMode = true }) {
+export async function generateContent({ cacheKey, type, prompt, jsonMode = true, forceRefresh = false }) {
   const supabase = await createClient()
 
-  // 1. Check Cache First
-  if (cacheKey) {
+  // 1. Check Cache First (Skip if forceRefresh is true)
+  if (cacheKey && !forceRefresh) {
     const { data: cached } = await supabase
       .from('ai_cache')
       .select('content_json')

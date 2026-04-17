@@ -55,7 +55,18 @@ export default function SettingsPage() {
     if (error) {
       toast.error('Failed to update profile')
     } else {
-      toast.success('Settings updated successfully')
+      // Clear analytics and study plan cache to force refresh with new goals
+      try {
+        await supabase
+          .from('ai_cache')
+          .delete()
+          .ilike('cache_key', `%_${user.id}%`)
+        
+        toast.success('Settings updated! Dashboard and Planner will re-sync.')
+      } catch (cacheErr) {
+        console.error('Cache clear error:', cacheErr)
+        toast.success('Settings updated successfully')
+      }
     }
     setSaving(false)
   }

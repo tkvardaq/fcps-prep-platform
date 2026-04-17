@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { LogOut, User, Bell } from 'lucide-react'
+import { LogOut, User, Bell, Search } from 'lucide-react'
 
 export default function Header() {
   const [profile, setProfile] = useState(null)
@@ -33,25 +33,42 @@ export default function Header() {
   }
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-40">
-      <div className="md:hidden">
-        <span className="text-xl font-bold text-blue-900 tracking-tight">FCPS Prep</span>
+    <header className="h-20 bg-white/50 backdrop-blur-md border-b border-rose-100/50 flex items-center justify-between px-8 sticky top-0 z-10">
+      <div className="flex items-center gap-4 flex-1">
+        <div className="relative w-full max-w-md group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-rose-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search study material... ✨"
+            className="w-full bg-slate-50 border-none rounded-2xl py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-rose-500/20 transition-all placeholder:text-slate-400"
+          />
+        </div>
       </div>
-      <div className="hidden md:block" /> {/* Spacer for flex */}
 
-      <div className="flex items-center space-x-4">
-        <button className="relative p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
+      <div className="flex items-center space-x-6">
+        <div className="hidden lg:flex items-center gap-2 bg-rose-50 px-4 py-2 rounded-2xl border border-rose-100/50">
+          <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+          <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">Goal: 4h Today ✨</span>
+        </div>
 
-        <div className="relative">
+        <div className="flex items-center space-x-3">
+          <button className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all relative">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+          </button>
+          
+          <div className="h-8 w-px bg-rose-100/50" />
+
           <button 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex items-center space-x-2 focus:outline-none"
+            className="flex items-center space-x-3 p-1.5 pr-4 rounded-2xl hover:bg-rose-50 group transition-all"
           >
-            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold border border-blue-200">
+            <div className="w-9 h-9 bg-gradient-to-tr from-rose-400 to-violet-400 rounded-xl flex items-center justify-center text-white soft-glow-pink group-hover:scale-105 transition-transform">
               {profile?.full_name?.charAt(0) || <User className="w-5 h-5" />}
+            </div>
+            <div className="text-left hidden sm:block">
+              <p className="text-sm font-bold text-slate-900 leading-none">{profile?.full_name || 'Dr. User'} ✨</p>
+              <p className="text-[10px] text-slate-500 font-medium">FCPS Candidate</p>
             </div>
           </button>
 

@@ -10,16 +10,7 @@
  * 0: complete blackout.
  */
 
-export function calculateSM2(accuracyPercent, prevInterval = 0, prevEaseFactor = 2.5, repetition = 0) {
-  // Map 0-100% to 0-5 quality scale
-  let quality = 0;
-  if (accuracyPercent >= 90) quality = 5;
-  else if (accuracyPercent >= 75) quality = 4;
-  else if (accuracyPercent >= 60) quality = 3;
-  else if (accuracyPercent >= 40) quality = 2;
-  else if (accuracyPercent >= 20) quality = 1;
-  else quality = 0;
-
+export function calculateSM2FromQuality(quality, prevInterval = 0, prevEaseFactor = 2.5, repetition = 0) {
   let interval;
   let easeFactor = prevEaseFactor;
   let nextRepetition = repetition;
@@ -51,4 +42,17 @@ export function calculateSM2(accuracyPercent, prevInterval = 0, prevEaseFactor =
     repetition: nextRepetition,
     nextReviewDate: nextReviewDate.toISOString().split('T')[0] // Just the date part
   };
+}
+
+export function calculateSM2(accuracyPercent, prevInterval = 0, prevEaseFactor = 2.5, repetition = 0) {
+  // Map 0-100% to 0-5 quality scale
+  let quality = 0;
+  if (accuracyPercent >= 90) quality = 5;
+  else if (accuracyPercent >= 75) quality = 4;
+  else if (accuracyPercent >= 60) quality = 3;
+  else if (accuracyPercent >= 40) quality = 2;
+  else if (accuracyPercent >= 20) quality = 1;
+  else quality = 0;
+
+  return calculateSM2FromQuality(quality, prevInterval, prevEaseFactor, repetition);
 }
