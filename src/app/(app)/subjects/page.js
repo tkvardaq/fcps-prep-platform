@@ -58,16 +58,17 @@ export default function SubjectsPage() {
         setSubjects(data)
       }
 
-      // Load MCQ counts per subject
-      const { data: mcqData } = await supabase
-        .from('mcqs')
-        .select('subject_id')
-
-      if (mcqData) {
+      // Load MCQ counts per subject using proper count queries
+      if (data) {
         const counts = {}
-        mcqData.forEach(m => {
-          counts[m.subject_id] = (counts[m.subject_id] || 0) + 1
-        })
+        await Promise.all(data.map(async (subj) => {
+          const { count } = await supabase
+            .from('mcqs')
+            .select('id', { count: 'exact', head: true })
+            .eq('subject_id', subj.id)
+            .eq('is_published', true)
+          counts[subj.id] = count || 0
+        }))
         setMcqCountMap(counts)
       }
 
