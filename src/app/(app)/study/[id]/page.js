@@ -8,15 +8,16 @@ import { useRouter } from 'next/navigation'
 import { generateTopicNotes } from '@/app/actions/ai-actions'
 import { toast } from 'sonner'
 
+import React from 'react'
+
+const supabase = createClient()
+
 export default function NotesViewerPage({ params }) {
+  const { id: topicId } = React.use(params)
   const [topic, setTopic] = useState(null)
   const [notes, setNotes] = useState(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
-  
-  const topicId = params.id
 
   useEffect(() => {
     async function loadData() {

@@ -4,13 +4,28 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar 
 } from 'recharts'
-import { TrendingDown, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { TrendingDown, TrendingUp, AlertCircle, CheckCircle2, BarChart2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+
+function EmptyChartState({ message }) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-2xl z-10 text-center p-6">
+      <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center mb-3">
+        <BarChart2 className="w-6 h-6" />
+      </div>
+      <p className="text-slate-400 text-sm font-medium max-w-[180px]">
+        {message || 'Complete a test to see your analytics here'}
+      </p>
+    </div>
+  )
+}
 
 export function AccuracyTrend({ data }) {
   // data: [{ name: 'Mon', accuracy: 65 }, ...]
+  const isEmpty = !data || data.length === 0
   return (
-    <div className="h-64 w-full">
+    <div className="h-64 w-full relative">
+      {isEmpty && <EmptyChartState message="Daily accuracy will appear here after your first quiz" />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <defs>
@@ -51,8 +66,10 @@ export function AccuracyTrend({ data }) {
 
 export function TopicMastery({ data }) {
   // data: [{ subject: 'Anatomy', score: 80 }, ...]
+  const isEmpty = !data || data.length === 0
   return (
-    <div className="h-64 w-full">
+    <div className="h-64 w-full relative">
+      {isEmpty && <EmptyChartState message="Perform a diagnostic to unlock subject mastery levels" />}
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical">
           <XAxis type="number" hide />

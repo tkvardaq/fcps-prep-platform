@@ -41,13 +41,13 @@ export default function DiagnosticPage() {
           .select('*, subjects(name)')
           .eq('subject_id', sub.id)
           .eq('is_published', true)
-          .limit(4)
+          .limit(8)
         
         if (mcqs) allMCQs.push(...mcqs)
       }
 
       // Shuffle and take up to 35
-      allMCQs = allMCQs.sort(() => Math.random() - 0.5).slice(0, 35)
+      allMCQs = allMCQs.sort(() => Math.random() - 0.5).slice(0, 50)
       setQuestions(allMCQs)
       setLoading(false)
     }

@@ -14,6 +14,7 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(true)
   const [weekOffset, setWeekOffset] = useState(0)
   const [regenerating, setRegenerating] = useState(false)
+  const [hasDiagnostic, setHasDiagnostic] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,6 +32,14 @@ export default function PlannerPage() {
     startOfWeek.setDate(today.getDate() - today.getDay() + 1 + (weekOffset * 7)) // Monday
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6) // Sunday
+
+    // Check for diagnostic results
+    const { count: diagnosticCount } = await supabase
+      .from('diagnostic_results')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    setHasDiagnostic(diagnosticCount > 0)
 
     const { data, error } = await supabase
       .from('study_schedule')
@@ -128,9 +137,11 @@ export default function PlannerPage() {
             <h1 className="text-4xl font-black text-slate-800 tracking-tight">Daily <span className="text-rose-500">Sparkle</span></h1>
           </div>
           <p className="text-slate-500 font-medium ml-1">
-            {schedule.length > 0 
-              ? `You've got ${totalHoursWeek}h of medical magic planned this week! ✨` 
-              : 'Your future is waiting to be planned...'}
+            {!hasDiagnostic 
+              ? 'Complete your diagnostic to unlock medical magic! ✨'
+              : schedule.length > 0 
+                ? `You've got ${totalHoursWeek}h of medical magic planned this week! ✨` 
+                : 'Your future is waiting to be planned...'}
           </p>
         </div>
         
@@ -255,7 +266,7 @@ export default function PlannerPage() {
         })}
       </div>
 
-      {/* Empty State Redesign */}
+      {/* Empty State / Diagnostic Gate */}
       {schedule.length === 0 && (
         <div className="bg-white rounded-[3rem] border border-rose-100 card-shadow p-20 text-center relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -263,40 +274,58 @@ export default function PlannerPage() {
           </div>
           <div className="relative z-10 max-w-md mx-auto">
             <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-8 soft-glow-pink">
-              <Calendar className="w-10 h-10 text-rose-500" />
+              {hasDiagnostic ? <Calendar className="w-10 h-10 text-rose-500" /> : <Target className="w-10 h-10 text-rose-500" />}
             </div>
-            <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Ready to start your <span className="text-rose-500">Journey</span>?</h2>
-            <p className="text-slate-500 font-medium mb-10 leading-relaxed">Let our AI build you a beautiful, personalized schedule that fits your life perfectly.</p>
-            <button 
-              onClick={async () => {
-                const toastId = toast.loading('Creating medical magic... ✨')
-                try {
-                  const { data: { user } } = await supabase.auth.getUser()
-                  if (!user) { toast.error('Not authenticated'); return }
-                  const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
-                  const p = profile
-                  const result = await generateStudyPlan(
-                    p?.exam_date || new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
-                    p?.daily_study_hours || 4,
-                    p?.paper_focus || 'Both Papers',
-                    [],
-                    []
-                  )
-                  if (result?.success) {
-                    toast.success(`Schedule created! ✨ Days planned: ${result.daysPlanned}`, { id: toastId })
-                    loadSchedule()
-                  } else {
-                    toast.error(result?.error || 'Failed to generate plan', { id: toastId })
-                  }
-                } catch (err) {
-                  console.error(err)
-                  toast.error('Error generating plan: ' + err.message, { id: toastId })
-                }
-              }}
-              className="bg-rose-500 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-3 soft-glow-pink shadow-lg shadow-rose-200"
-            >
-              Generate My Magic Plan ✨
-            </button>
+            
+            {!hasDiagnostic ? (
+              <>
+                <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Test <span className="text-rose-500">First</span>, Plan Later</h2>
+                <p className="text-slate-500 font-medium mb-10 leading-relaxed">
+                  To give you an accurate study plan, we need to know your strong and weak points. Take a quick 50-question diagnostic to unlock your personalized schedule.
+                </p>
+                <Link 
+                  href="/diagnostic"
+                  className="bg-rose-500 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-3 soft-glow-pink shadow-lg shadow-rose-200"
+                >
+                  Start Diagnostic Assessment ✨
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Ready to start your <span className="text-rose-500">Journey</span>?</h2>
+                <p className="text-slate-500 font-medium mb-10 leading-relaxed">Your diagnostic is complete! Now let our AI build you a beautiful, personalized schedule based on your performance.</p>
+                <button 
+                  onClick={async () => {
+                    const toastId = toast.loading('Creating medical magic... ✨')
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (!user) { toast.error('Not authenticated'); return }
+                      const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
+                      const p = profile
+                      const result = await generateStudyPlan(
+                        p?.exam_date || new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
+                        p?.daily_study_hours || 4,
+                        p?.paper_focus || 'Both Papers',
+                        [],
+                        []
+                      )
+                      if (result?.success) {
+                        toast.success(`Schedule created! ✨ Days planned: ${result.daysPlanned}`, { id: toastId })
+                        loadSchedule()
+                      } else {
+                        toast.error(result?.error || 'Failed to generate plan', { id: toastId })
+                      }
+                    } catch (err) {
+                      console.error(err)
+                      toast.error('Error generating plan: ' + err.message, { id: toastId })
+                    }
+                  }}
+                  className="bg-rose-500 text-white px-10 py-4 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-3 soft-glow-pink shadow-lg shadow-rose-200"
+                >
+                  Generate My Magic Plan ✨
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

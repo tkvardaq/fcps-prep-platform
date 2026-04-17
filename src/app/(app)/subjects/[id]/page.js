@@ -15,8 +15,10 @@ const TOPIC_QUOTES = [
   "Consistency beats intensity. Keep going! 🔥",
 ]
 
-export default function SubjectDetailPage() {
-  const params = useParams()
+import React from 'react'
+
+export default function SubjectDetailPage({ params }) {
+  const { id: subjectId } = React.use(params)
   const [subject, setSubject] = useState(null)
   const [topics, setTopics] = useState([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export default function SubjectDetailPage() {
       const { data: subjectData } = await supabase
         .from('subjects')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', subjectId)
         .single()
         
       if (subjectData) {
@@ -65,7 +67,7 @@ export default function SubjectDetailPage() {
     }
     
     loadData()
-  }, [params.id])
+  }, [subjectId])
 
   if (loading) {
      return (

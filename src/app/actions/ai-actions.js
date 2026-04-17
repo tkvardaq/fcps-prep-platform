@@ -11,7 +11,7 @@ export async function generateDiagnosticMCQs() {
     .from('mcqs')
     .select('*, topics(name), subjects(name)')
     .eq('is_published', true)
-    .limit(35)
+    .limit(50)
     
   if (error || !mcqs || mcqs.length === 0) {
     return { success: true, mcqs: [] }
@@ -31,7 +31,21 @@ export async function generateStudyPlan(examDate, dailyHours, paperFocus, weakSu
   const { data: allSubjectsRaw } = await supabase.from('subjects').select('name')
   const availableSubjects = allSubjectsRaw ? allSubjectsRaw.map(s => s.name).join(', ') : 'Anatomy, Physiology, Pathology, Medicine, Surgery'
   
-  const prompt = getStudyPlanPrompt(examDate, dailyHours, paperFocus, weakSubjects.join(', '), strongSubjects.join(', '), availableSubjects)
+  // Auto-fetch performance data if not provided
+  let finalWeak = weakSubjects || []
+  let finalStrong = strongSubjects || []
+  
+  if (finalWeak.length === 0) {
+    const { data: weakData } = await supabase.from('weak_topics').select('subjects(name)').eq('user_id', user.id).limit(10)
+    finalWeak = [...new Set(weakData?.map(w => w.subjects?.name).filter(Boolean) || [])]
+  }
+  
+  if (finalStrong.length === 0) {
+     const { data: strongData } = await supabase.from('diagnostic_results').select('subjects(name)').eq('user_id', user.id).gte('score_percent', 75).limit(10)
+     finalStrong = [...new Set(strongData?.map(s => s.subjects?.name).filter(Boolean) || [])]
+  }
+
+  const prompt = getStudyPlanPrompt(examDate, dailyHours, paperFocus, finalWeak.join(', '), finalStrong.join(', '), availableSubjects)
   
   try {
     const contentJson = await generateContent({
