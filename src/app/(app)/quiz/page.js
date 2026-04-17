@@ -42,11 +42,16 @@ function QuizContent() {
   async function loadQuestions() {
     setLoading(true)
     
+    const setNum = parseInt(searchParams.get('set') || '1')
+    const pageSize = 50
+    const from = (setNum - 1) * pageSize
+    const to = from + pageSize - 1
+
     let query = supabase
       .from('mcqs')
       .select('*')
       .eq('is_published', true)
-      .limit(20)
+      .range(from, to)
 
     if (topicId) {
       query = query.eq('topic_id', topicId)
@@ -57,7 +62,9 @@ function QuizContent() {
     const { data, error } = await query
       
     if (!error && data && data.length > 0) {
-      const shuffled = data.sort(() => 0.5 - Math.random())
+      // For practice sets, we might not want to shuffle everything if they are expecting "Set 1" to be specific questions, 
+      // but usually shuffling within the set is better UI.
+      const shuffled = [...data].sort(() => 0.5 - Math.random())
       setQuestions(shuffled)
     }
     

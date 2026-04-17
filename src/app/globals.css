@@ -67,11 +67,74 @@ body {
   transform: scale(0.96);
 }
 
-.bubble-button {
-  border-radius: 9999px;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
 .bubble-button:hover {
   transform: scale(1.05);
   box-shadow: var(--glow-pink);
+}
+
+/* AI Study Notes Premium Styling */
+.ai-content-block {
+  font-family: var(--font-sans);
+}
+
+.ai-content-block h2 { @apply text-2xl font-black text-slate-800 mb-6 tracking-tight flex items-center gap-2; }
+.ai-content-block h3 { @apply text-lg font-bold text-slate-700 mt-8 mb-4 border-l-4 border-rose-500 pl-4; }
+.ai-content-block p { @apply text-slate-600 leading-relaxed mb-4 font-medium; }
+
+.high-yield-card {
+  @apply bg-rose-50/50 border border-rose-100 rounded-3xl p-8 mb-8 relative overflow-hidden;
+  box-shadow: inset 0 0 20px rgba(244, 63, 94, 0.05);
+}
+.high-yield-card h2 { @apply text-rose-600 m-0 mb-3; }
+.high-yield-card p { @apply m-0 text-rose-900/70; }
+
+.mnemonic-box {
+  @apply bg-violet-50/50 border border-violet-100 rounded-3xl p-6 mb-8;
+}
+.mnemonic-box h3 { @apply text-violet-700 border-violet-400 m-0 mb-3; }
+
+.trap-alert {
+  @apply bg-amber-50/50 border border-amber-200 rounded-3xl p-6 mb-8;
+}
+.trap-alert h3 { @apply text-amber-700 border-amber-400 m-0 mb-3; }
+
+.table-wrapper {
+  @apply overflow-x-auto my-8 rounded-3xl border border-slate-100;
+}
+.comparison-table {
+  @apply w-full text-left border-collapse;
+}
+.comparison-table th {
+  @apply bg-slate-50 p-4 font-black text-slate-900 text-xs uppercase tracking-widest border-b border-slate-100;
+}
+.comparison-table td {
+  @apply p-4 text-sm font-medium text-slate-600 border-b border-slate-50;
+}
+.comparison-table tr:last-child td { @apply border-b-0; }
+.comparison-table tr:hover td { @apply bg-slate-50/30; }
+
+.pearls-list {
+  @apply space-y-3 my-4 list-none p-0;
+}
+.pearls-list li {
+  @apply flex items-start gap-3 text-slate-600 font-medium;
+}
+.pearls-list li::before {
+  content: '✨';
+  @apply shrink-0 text-xs mt-1;
+}
+
+.concept-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4 my-6;
+}
+
+.trap-list {
+  @apply space-y-2 list-none p-0;
+}
+.trap-list li {
+  @apply flex items-start gap-2 text-sm font-bold text-amber-800/80;
+}
+.trap-list li::before {
+  content: '❌';
+  @apply scale-75 mt-0.5;
 }

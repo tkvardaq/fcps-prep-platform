@@ -28,25 +28,64 @@ Each object must have exactly these fields:
 `
 
 export const getNotesPrompt = (topic, subject, references) => `
-You are a senior medical educator writing high-yield revision notes for FCPS Part 1 Gynecology & Obstetrics (Pakistan) students.
+You are a senior medical educator writing premium, high-fidelity revision notes for FCPS Part 1 Gynecology & Obstetrics (Pakistan) students.
+Your goal is to provide "Aura-Glass" aesthetic content that is visually organized and extremely high-yield.
 
-Create comprehensive revision notes for:
 Topic: ${topic}
 Subject: ${subject}
 Reference books: ${references}
 
-Structure your notes EXACTLY as follows:
-1. OVERVIEW — 2-3 sentence summary of why this topic matters for FCPS
-2. KEY DEFINITIONS — bullet list of must-know terms
-3. CORE CONCEPTS — the essential facts, mechanisms, pathways
-4. COMPARISON TABLES — side-by-side comparisons where relevant
-5. MNEMONICS — memory aids for complex lists or sequences
-6. EXAM TRAPS — common wrong answers and how to avoid them
-7. HIGH-YIELD FACTS — 5-7 one-liner facts most likely to appear in exam
-8. CLINICAL LINKS — how basic science connects to clinical Gyne/Obs
+Return clean, structured HTML using ONLY these exact sections and CSS classes:
 
-Base everything strictly on ${references}. Do not include unverified or speculative information.
-Return as clean HTML (use h2, h3, ul, li, table, strong tags only). Do NOT wrap the result in JSON, just return raw HTML.
+1. <div class="high-yield-card">
+   <h2>🚀 Exam Pulse</h2>
+   <p>2-3 sentence summary of why this topic is CRITICAL for FCPS Part 1.</p>
+   </div>
+
+2. <h3>📌 Essential Definitions</h3>
+   <ul class="pearls-list">
+   <li>Term 1: Definition...</li>
+   </ul>
+
+3. <h3>🧬 Core Anatomy & Physiology</h3>
+   <div class="concept-grid">
+   <!-- Detail findings here -->
+   </div>
+
+4. <div class="table-wrapper">
+   <h3>📊 Master Comparison Table</h3>
+   <table class="comparison-table">
+   <thead><tr><th>Feature</th><th>Condition A</th><th>Condition B</th></tr></thead>
+   <tbody>...</tbody>
+   </table>
+   </div>
+
+5. <div class="mnemonic-box">
+   <h3>💡 Pro Mnemonics</h3>
+   <p>Memory aids to lock this in.</p>
+   </div>
+
+6. <div class="trap-alert">
+   <h3>⚠️ EXAM TRAP - Avoid These!</h3>
+   <ul class="trap-list">
+   <li>Distractor 1 vs Truth 1...</li>
+   </ul>
+   </div>
+
+7. <div class="pearls-container">
+   <h3>💎 Radiant Pearls (One-Liners)</h3>
+   <ul class="pearls-list">
+   <li>One-liner fact most likely to be tested.</li>
+   </ul>
+   </div>
+
+STRICT RULES:
+- Use standard HTML tags (h2, h3, p, ul, li, table, strong, div, span).
+- DO NOT use markdown blocks (\`\`\`html).
+- DO NOT include <head>, <body>, or <style> tags.
+- Use the CSS classes mentioned above (high-yield-card, mnemonic-box, trap-alert, comparison-table, pearls-list, concept-grid, table-wrapper).
+- Base everything strictly on ${references} (SK-Pink, Radiant Notes, Bailey & Love).
+- Ensure the tone is professional, encouraging, and authoritative.
 `
 
 export const getStudyPlanPrompt = (date, hours, focus, weakSubjects, strongSubjects, availableSubjects) => {

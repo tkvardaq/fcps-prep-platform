@@ -24,6 +24,7 @@ export default function SubjectDetailPage({ params }) {
   const [loading, setLoading] = useState(true)
   const [expandedTopic, setExpandedTopic] = useState(null)
   const [topicMcqCounts, setTopicMcqCounts] = useState({})
+  const [groupedTopics, setGroupedTopics] = useState({})
   const router = useRouter()
   const supabase = createClient()
 
@@ -46,6 +47,15 @@ export default function SubjectDetailPage({ params }) {
           
         if (topicsData) {
           setTopics(topicsData)
+
+          // Group topics by category
+          const grouped = topicsData.reduce((acc, topic) => {
+            const cat = topic.category || 'General'
+            if (!acc[cat]) acc[cat] = []
+            acc[cat].push(topic)
+            return acc
+          }, {})
+          setGroupedTopics(grouped)
 
           // Get MCQ counts per topic
           const { data: mcqs } = await supabase
@@ -174,85 +184,125 @@ export default function SubjectDetailPage({ params }) {
           Syllabus Topics
         </h2>
         
-        <div className="space-y-2">
-          {topics.map((topic, idx) => {
-            const isExpanded = expandedTopic === topic.id
-            const mcqCount = topicMcqCounts[topic.id] || 0
-            
-            return (
-              <motion.div 
-                key={topic.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04 }}
-                className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:border-slate-200 transition-all"
-              >
-                {/* Accordion Header */}
-                <button 
-                  onClick={() => setExpandedTopic(isExpanded ? null : topic.id)}
-                  className="w-full p-4 md:p-5 flex items-center gap-4 text-left group"
-                >
-                  <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: `${hex}12`, color: hex }}>
-                    {idx + 1}
-                  </div>
+        <div className="space-y-10">
+          {Object.entries(groupedTopics).map(([category, catTopics], catIdx) => (
+            <div key={category} className="space-y-4">
+              <div className="flex items-center gap-3 px-1">
+                <div className="h-6 w-1 rounded-full" style={{ backgroundColor: hex }} />
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{category}</h3>
+                <div className="flex-1 h-px bg-slate-100" />
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                  {catTopics.length} Topics
+                </span>
+              </div>
+              
+              <div className="space-y-2">
+                {catTopics.map((topic, idx) => {
+                  const isExpanded = expandedTopic === topic.id
+                  const mcqCount = topicMcqCounts[topic.id] || 0
                   
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{topic.name}</h3>
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{topic.description}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    {mcqCount > 0 && (
-                      <span className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg">
-                        <Brain className="w-3 h-3" /> {mcqCount}
-                      </span>
-                    )}
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                  </div>
-                </button>
-
-                {/* Accordion Body */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
+                  return (
+                    <motion.div 
+                      key={topic.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: (catIdx * 0.1) + (idx * 0.04) }}
+                      className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:border-slate-200 transition-all card-shadow-sm"
                     >
-                      <div className="px-4 md:px-5 pb-4 md:pb-5 pt-0">
-                        <div className="border-t border-slate-100 pt-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                          <div className="flex items-center gap-4 text-sm text-slate-500">
-                            <span className="flex items-center gap-1.5">
-                              <Brain className="w-4 h-4 text-purple-400" />
-                              <strong className="text-slate-700">{mcqCount}</strong> MCQs available
-                            </span>
-                          </div>
+                      {/* Accordion Header */}
+                      <button 
+                        onClick={() => setExpandedTopic(isExpanded ? null : topic.id)}
+                        className="w-full p-4 md:p-6 flex items-center gap-4 text-left group"
+                      >
+                        <div className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center font-black text-sm" style={{ backgroundColor: `${hex}12`, color: hex }}>
+                          {idx + 1}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{topic.name}</h3>
+                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{topic.description}</p>
+                        </div>
 
-                          <div className="flex items-center gap-2">
-                            <Link 
-                              href={`/study/${topic.id}`} 
-                              className="px-4 py-2 text-sm font-bold rounded-xl transition-all flex items-center bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            >
-                              <BookOpen className="w-4 h-4 mr-2" /> Study Notes
-                            </Link>
-                            <Link 
-                              href={`/quiz?topic=${topic.id}`} 
-                              className="px-4 py-2 text-sm font-bold rounded-xl transition-all flex items-center text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95"
-                              style={{ backgroundColor: hex }}
-                            >
-                              <PlayCircle className="w-4 h-4 mr-2" /> Practice
-                            </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {mcqCount > 0 && (
+                            <span className="hidden md:flex items-center gap-1.5 text-[10px] font-black uppercase text-slate-400 bg-slate-50 px-3 py-1 rounded-xl border border-slate-100">
+                              <Brain className="w-3 h-3" /> {mcqCount}
+                            </span>
+                          )}
+                          <div className={clsx(
+                            "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                            isExpanded ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-400"
+                          )}>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
                         </div>
-                      </div>
+                      </button>
+
+                      {/* Accordion Body */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: "circOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 md:px-6 pb-6 pt-2">
+                              <div className="bg-slate-50/50 rounded-[1.5rem] p-6 border border-slate-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex -space-x-2">
+                                      <div className="w-8 h-8 rounded-full bg-rose-100 border-2 border-white flex items-center justify-center text-rose-500 scale-90"><Target className="w-4 h-4" /></div>
+                                      <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-blue-500 scale-90"><Brain className="w-4 h-4" /></div>
+                                    </div>
+                                    <span className="text-sm font-bold text-slate-700">Topic Ready for Study</span>
+                                  </div>
+                                  <p className="text-xs text-slate-400 font-medium">Practice {mcqCount} industry-standard MCQs or review high-yield notes.</p>
+                                </div>
+
+                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                  <Link 
+                                    href={`/study/${topic.id}`} 
+                                    className="flex-1 md:flex-none px-6 py-3 text-sm font-black rounded-2xl transition-all flex items-center justify-center bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm"
+                                  >
+                                    <BookOpen className="w-4 h-4 mr-2" /> Study Notes
+                                  </Link>
+                                  
+                                  {mcqCount > 50 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {[...Array(Math.min(5, Math.ceil(mcqCount / 50)))].map((_, i) => (
+                                        <Link 
+                                          key={i}
+                                          href={`/quiz?topic=${topic.id}&set=${i + 1}`} 
+                                          className="px-4 py-2 text-[10px] font-black rounded-xl transition-all flex items-center justify-center text-white soft-glow-pink"
+                                          style={{ backgroundColor: hex }}
+                                        >
+                                          Set {i + 1}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <Link 
+                                      href={`/quiz?topic=${topic.id}`} 
+                                      className="flex-1 md:flex-none px-6 py-3 text-sm font-black rounded-2xl transition-all flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95"
+                                      style={{ backgroundColor: hex, boxShadow: `0 8px 20px ${hex}30` }}
+                                    >
+                                      <PlayCircle className="w-4 h-4 mr-2" /> Practice
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )
-          })}
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {topics.length === 0 && (

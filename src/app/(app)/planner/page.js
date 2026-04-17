@@ -6,14 +6,17 @@ import { Calendar, CheckCircle2, Circle, Clock, BookOpen, BrainCircuit, Target, 
 import { toast, Toaster } from 'sonner'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { markScheduleComplete } from '@/app/actions/study-actions'
+import { markScheduleComplete, resetUserPlan } from '@/app/actions/study-actions'
 import { generateStudyPlan } from '@/app/actions/ai-actions'
+import { Trash2, AlertCircle, X } from 'lucide-react'
 
 export default function PlannerPage() {
   const [schedule, setSchedule] = useState([])
   const [loading, setLoading] = useState(true)
   const [weekOffset, setWeekOffset] = useState(0)
   const [regenerating, setRegenerating] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [hasDiagnostic, setHasDiagnostic] = useState(true)
   const supabase = createClient()
 
@@ -96,6 +99,26 @@ export default function PlannerPage() {
     }
   }
 
+  const handleReset = async () => {
+    setResetting(true)
+    const toastId = toast.loading('Clearing all study magic... 🧹')
+    try {
+      const result = await resetUserPlan()
+      if (result.success) {
+        toast.success('System reset successfully! Time for a fresh start. ✨', { id: toastId })
+        setShowResetModal(false)
+        loadSchedule()
+      } else {
+        toast.error(result.error || 'Failed to reset', { id: toastId })
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error('Error: ' + err.message, { id: toastId })
+    } finally {
+      setResetting(false)
+    }
+  }
+
   // Group by day
   const today = new Date()
   const startOfWeek = new Date(today)
@@ -163,9 +186,17 @@ export default function PlannerPage() {
               className="p-3 bg-rose-500 text-white rounded-2xl transition-all hover:scale-105 active:scale-95 soft-glow-pink flex items-center gap-2 group disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
-              <span className="text-xs font-bold hidden sm:inline">Refresh Logic</span>
+              <span className="text-xs font-bold hidden sm:inline">Smart Refresh</span>
             </button>
           )}
+
+          <button 
+            onClick={() => setShowResetModal(true)}
+            className="p-3 bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600 rounded-2xl transition-all group"
+            title="Reset All Data"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -326,6 +357,44 @@ export default function PlannerPage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-10 card-shadow border border-rose-50 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <button onClick={() => !resetting && setShowResetModal(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+            
+            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">System <span className="text-rose-500">Reset</span>?</h3>
+            <p className="text-slate-500 font-medium leading-relaxed mb-8">
+              This will permanently delete your current study plan, diagnostic results, and identified weak points. You will need to retake the diagnostic to generate a new plan.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setShowResetModal(false)}
+                disabled={resetting}
+                className="py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold hover:bg-slate-100 transition-colors disabled:opacity-50"
+              >
+                No, Keep it
+              </button>
+              <button 
+                onClick={handleReset}
+                disabled={resetting}
+                className="py-4 bg-rose-500 text-white rounded-2xl font-black hover:bg-rose-600 transition-colors shadow-lg shadow-rose-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, Reset All'}
+              </button>
+            </div>
           </div>
         </div>
       )}

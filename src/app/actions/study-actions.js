@@ -204,6 +204,34 @@ export async function recordMockExamResult({ questions, userAnswers, paperNumber
 }
 
 /**
+ * Reset all user study data (Schedule, Diagnostics, Weak Topics)
+ */
+export async function resetUserPlan() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  try {
+    // 1. Delete Study Schedule
+    await supabase.from('study_schedule').delete().eq('user_id', user.id)
+    
+    // 2. Delete Diagnostic Results
+    await supabase.from('diagnostic_results').delete().eq('user_id', user.id)
+    
+    // 3. Delete Weak Topics (Baselines)
+    await supabase.from('weak_topics').delete().eq('user_id', user.id)
+    
+    // 4. Clear analytics cache
+    await supabase.from('ai_cache').delete().eq('cache_key', `analytics_${user.id}`)
+
+    return { success: true }
+  } catch (error) {
+    console.error('[resetUserPlan] Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Record diagnostic results — saves to diagnostic_results, seeds weak_topics
  */
 export async function recordDiagnosticResult({ questions, answers }) {

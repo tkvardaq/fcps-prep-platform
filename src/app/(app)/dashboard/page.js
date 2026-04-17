@@ -120,7 +120,8 @@ export default function DashboardPage() {
     })
 
     // Today's schedule
-    const today = new Date().toISOString().split('T')[0]
+    // Today's schedule using local date to match DB storage
+    const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD format
     const { data: schedule } = await supabase
       .from('study_schedule')
       .select('*, subjects(name, color_hex), topics(name)')
