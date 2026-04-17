@@ -29,35 +29,60 @@ export async function generateContent({ cacheKey, type, prompt, jsonMode = true 
   let modelUsed = ''
 
   try {
-    // 2. Call Gemini First
-    console.log(`[AI Calling Gemini] Key: ${cacheKey}`)
-    modelUsed = 'gemini-1.5-flash'
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        responseMimeType: jsonMode ? "application/json" : "text/plain",
-      }
-    })
+    // 2. Prioritize OpenRouter for token efficiency
+    console.log(`[AI Calling OpenRouter] Key: ${cacheKey}`)
+    modelUsed = 'openrouter-gemini'
     
-    const result = await model.generateContent(prompt)
-    finalContentStr = result.response.text()
+    const openRouterReq = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemini-1.5-flash",
+        messages: [{ role: "user", content: prompt }],
+        response_format: jsonMode ? { type: "json_object" } : undefined
+      })
+    });
 
-  } catch (geminiError) {
-    console.error('[Gemini Error]', geminiError.message || geminiError)
-    
-    // 3. Fallback to Mistral on Error (e.g. 429)
-    console.log(`[AI Fallback to Mistral] Key: ${cacheKey}`)
-    modelUsed = 'mistral-small-latest'
+    if (!openRouterReq.ok) throw new Error("OpenRouter request failed")
+    const orResult = await openRouterReq.json()
+    finalContentStr = orResult.choices[0].message.content
+
+  } catch (orError) {
+    console.warn('[OpenRouter Error]', orError.message || orError)
     
     try {
-      const chatResponse = await mistral.chat.complete({
-        model: 'mistral-small-latest',
-        messages: [{ role: 'user', content: prompt }],
-        responseFormat: jsonMode ? { type: 'json_object' } : undefined,
+      // 3. Fallback to Direct Gemini
+      console.log(`[AI Fallback to Direct Gemini] Key: ${cacheKey}`)
+      modelUsed = 'gemini-1.5-flash'
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          responseMimeType: jsonMode ? "application/json" : "text/plain",
+        }
       })
-      finalContentStr = chatResponse.choices[0].message.content
-    } catch (mistralError) {
-      console.warn('[Mistral Error]', mistralError.message || mistralError)
+      
+      const result = await model.generateContent(prompt)
+      finalContentStr = result.response.text()
+
+    } catch (geminiError) {
+      console.error('[Gemini Error]', geminiError.message || geminiError)
+      
+      // 4. Fallback to Mistral on Error (e.g. 429)
+      console.log(`[AI Fallback to Mistral] Key: ${cacheKey}`)
+      modelUsed = 'mistral-small-latest'
+      
+      try {
+        const chatResponse = await mistral.chat.complete({
+          model: 'mistral-small-latest',
+          messages: [{ role: 'user', content: prompt }],
+          responseFormat: jsonMode ? { type: 'json_object' } : undefined,
+        })
+        finalContentStr = chatResponse.choices[0].message.content
+      } catch (mistralError) {
+        console.warn('[Mistral Error]', mistralError.message || mistralError)
       
       console.log(`[AI Offline Fallback] Automatically generating local offline content for ${type}...`)
       
@@ -107,6 +132,7 @@ export async function generateContent({ cacheKey, type, prompt, jsonMode = true 
       }
     }
   }
+}
 
   // Parse result (if JSON)
   let contentJson = null

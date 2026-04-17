@@ -86,8 +86,10 @@ export async function recordQuizSession({ topicId, subjectId, detailedAttempts, 
   // 5. Update leaderboard
   await updateLeaderboard(user.id)
 
+  // 6. Invalidate Dashboard Cache
+  await supabase.from('ai_cache').delete().eq('cache_key', `analytics_${user.id}`)
+
   return { 
-    success: true, 
     success: true, 
     score: correctCount, 
     total: totalQuestions, 
@@ -168,6 +170,9 @@ export async function recordMockExamResult({ questions, userAnswers, paperNumber
   // 4. Update leaderboard
   await updateLeaderboard(user.id)
 
+  // 5. Invalidate Dashboard Cache
+  await supabase.from('ai_cache').delete().eq('cache_key', `analytics_${user.id}`)
+
   return {
     success: true,
     score: totalCorrect,
@@ -240,6 +245,9 @@ export async function recordDiagnosticResult({ questions, answers }) {
     total_questions: questions.length,
     correct_answers: totalCorrect
   })
+
+  // Invalidate Dashboard Cache
+  await supabase.from('ai_cache').delete().eq('cache_key', `analytics_${user.id}`)
 
   return { success: true, subjectResults: diagRows, weakTopicCount: weakRows.length }
 }
@@ -427,6 +435,22 @@ export async function getAnalyticsData() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
+    // Check AI cache for dashboard analytics
+    const cacheKey = `analytics_${user.id}`
+    const { data: cached } = await supabase
+      .from('ai_cache')
+      .select('content_json, created_at')
+      .eq('cache_key', cacheKey)
+      .single()
+
+    if (cached?.content_json) {
+      // If cached data is younger than 15 mins, return it immediately
+      const ageMinutes = (Date.now() - new Date(cached.created_at).getTime()) / 60000
+      if (ageMinutes < 15) {
+         return cached.content_json;
+      }
+    }
+
     // 1. Accuracy Trend (Last 7 days)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -486,11 +510,20 @@ export async function getAnalyticsData() {
       retention = Math.min(100, Math.round((avgEase / 2.5) * 85)) // Max ~100%
     }
 
-    return {
+    const finalData = {
       trendData: trendData || [],
       masteryData: masteryData || [],
       retention: retention || 0
     }
+
+    // Upsert into ai_cache
+    if (cached) {
+       await supabase.from('ai_cache').update({ content_json: finalData, created_at: new Date().toISOString() }).eq('cache_key', cacheKey)
+    } else {
+       await supabase.from('ai_cache').insert({ cache_key: cacheKey, content_type: 'analytics', content_json: finalData, model_used: 'system' })
+    }
+
+    return finalData
   } catch (error) {
     console.error('[getAnalyticsData] Error:', error)
     return { trendData: [], masteryData: [], retention: 0 }

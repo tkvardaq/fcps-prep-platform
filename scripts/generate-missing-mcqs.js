@@ -3,17 +3,17 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-if (!MISTRAL_API_KEY) {
-  console.error("MISTRAL_API_KEY missing from .env.local");
+if (!OPENROUTER_API_KEY) {
+  console.error("OPENROUTER_API_KEY missing from .env.local");
   process.exit(1);
 }
 
 const TARGET_MCQ_COUNT = 30; // Aim to generate 30 per deficient subject to save time
 
-async function generateWithMistral(subjectName) {
-  console.log(`Asking Mistral for 10 high-yield MCQs for ${subjectName}...`);
+async function generateWithOpenRouter(subjectName) {
+  console.log(`Asking OpenRouter for 10 high-yield MCQs for ${subjectName}...`);
   
   const prompt = `
 You are an expert medical professor creating questions for the FCPS (Fellowship of College of Physicians and Surgeons) exam.
@@ -38,14 +38,14 @@ No other conversational text!! Output ONLY RAW JSON.
 `;
 
   try {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'mistral-large-latest',
+        model: 'google/gemini-1.5-flash',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
         response_format: { type: "json_object" }
@@ -58,7 +58,9 @@ No other conversational text!! Output ONLY RAW JSON.
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content.trim();
+    let content = data.choices[0].message.content.trim();
+    // In case the AI returned backticks around JSON
+    content = content.replace(/```json/g, '').replace(/```/g, '').trim()
     
     // Attempt parsing
     try {
@@ -71,7 +73,7 @@ No other conversational text!! Output ONLY RAW JSON.
          return null;
     }
   } catch(e) {
-      console.error("Mistral fetch failed:", e.message);
+      console.error("OpenRouter fetch failed:", e.message);
       return null;
   }
 }
@@ -127,7 +129,7 @@ async function run() {
       
       // Generate in batches of 10
       while (totalInsertedForSubject < needed) {
-          const generated = await generateWithMistral(sub.name);
+          const generated = await generateWithOpenRouter(sub.name);
           if (!generated || !Array.isArray(generated) || generated.length === 0) {
               console.log("Failed to generate valid batch, retrying in 3s...");
               await new Promise(r => setTimeout(r, 3000));
