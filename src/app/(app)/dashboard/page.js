@@ -238,7 +238,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="px-6 pb-6 text-center">
-                <p className="text-slate-400 font-medium py-8">No study plan for today. <Link href="/onboarding" className="text-blue-600 hover:underline">Generate your AI plan →</Link></p>
+                <p className="text-slate-400 font-medium py-8">No study plan for today. <Link href="/planner" className="text-blue-600 hover:underline">Generate your AI plan →</Link></p>
               </div>
             )}
           </div>

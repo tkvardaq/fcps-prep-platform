@@ -104,22 +104,43 @@ export default function DiagnosticPage() {
     try {
       // Save diagnostic results and seed weak_topics
       toast.info('Analyzing your results...')
-      await recordDiagnosticResult({ questions, answers: mappedAnswers })
+      const diagResult = await recordDiagnosticResult({ questions, answers: mappedAnswers })
+
+      // Calculate weak and strong subjects from answers
+      const subjectScores = {}
+      questions.forEach(q => {
+        const subName = q.subjects?.name || 'Unknown'
+        if (!subjectScores[subName]) subjectScores[subName] = { total: 0, correct: 0 }
+        subjectScores[subName].total++
+        if (mappedAnswers[q.id] === q.correct_answer) subjectScores[subName].correct++
+      })
+
+      const weakSubjects = []
+      const strongSubjects = []
+      Object.entries(subjectScores).forEach(([name, vals]) => {
+        const acc = vals.total > 0 ? (vals.correct / vals.total) * 100 : 0
+        if (acc < 50) weakSubjects.push(name)
+        else if (acc >= 70) strongSubjects.push(name)
+      })
 
       // Generate AI study plan
       const profile = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
       const p = profile.data
       
       toast.info('Generating your personalized AI study plan...')
-      await generateStudyPlan(
+      const planResult = await generateStudyPlan(
         p?.exam_date || new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
         p?.daily_study_hours || 4,
         p?.paper_focus || 'Both Papers',
-        [], // weakSubjects will be derived from diagnostic
-        []  // strongSubjects will be derived from diagnostic
+        weakSubjects,
+        strongSubjects
       )
 
-      toast.success('Study plan generated! Redirecting...')
+      if (planResult?.success) {
+        toast.success('Study plan generated! Redirecting...')
+      } else {
+        toast.warning('Plan generated with fallback data. You can regenerate later.')
+      }
       setTimeout(() => router.push('/dashboard'), 1500)
     } catch (err) {
       console.error('Diagnostic error:', err)

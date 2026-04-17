@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Calendar, CheckCircle2, Circle, Clock, BookOpen, BrainCircuit, Target, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, Clock, BookOpen, BrainCircuit, Target, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import Link from 'next/link'
 import { markScheduleComplete } from '@/app/actions/study-actions'
+import { generateStudyPlan } from '@/app/actions/ai-actions'
 
 export default function PlannerPage() {
   const [schedule, setSchedule] = useState([])
@@ -161,10 +162,37 @@ export default function PlannerPage() {
         <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-12 text-center">
           <Calendar className="w-16 h-16 text-slate-200 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-900 mb-2">No Study Plan Generated</h2>
-          <p className="text-slate-500 mb-6 max-w-md mx-auto">Complete the onboarding flow to generate your personalized AI study schedule based on your exam date and weak areas.</p>
-          <Link href="/onboarding" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+          <p className="text-slate-500 mb-6 max-w-md mx-auto">Generate your personalized AI study schedule based on your exam date and weak areas.</p>
+          <button 
+            onClick={async () => {
+              toast.info('Generating your AI study plan...')
+              try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) { toast.error('Not authenticated'); return }
+                const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', user.id).single()
+                const p = profile
+                const result = await generateStudyPlan(
+                  p?.exam_date || new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
+                  p?.daily_study_hours || 4,
+                  p?.paper_focus || 'Both Papers',
+                  [],
+                  []
+                )
+                if (result?.success) {
+                  toast.success(`Study plan generated! ${result.daysPlanned} days planned.`)
+                  loadSchedule()
+                } else {
+                  toast.error(result?.error || 'Failed to generate plan')
+                }
+              } catch (err) {
+                console.error(err)
+                toast.error('Error generating plan: ' + err.message)
+              }
+            }}
+            className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+          >
             Generate Study Plan
-          </Link>
+          </button>
         </div>
       )}
     </div>

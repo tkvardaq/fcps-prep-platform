@@ -84,10 +84,21 @@ export async function generateContent({ cacheKey, type, prompt, jsonMode = true 
         }));
         finalContentStr = jsonMode ? JSON.stringify(dummyMCQs) : dummyMCQs;
       } else if (type === 'study_plan') {
-         const dummyPlan = [
-           { date: new Date(Date.now() + 86400000).toISOString().split('T')[0], task_type: 'learn', hours_allocated: 4 },
-           { date: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0], task_type: 'revise', hours_allocated: 2 }
-         ];
+         // Generate a realistic 14-day fallback plan with real subject names
+         const defaultSubjects = ['Anatomy', 'Physiology', 'Pathology', 'Pharmacology', 'Medicine', 'Surgery', 'Gynaecology and Obstetrics', 'Biochemistry', 'Microbiology'];
+         const taskTypes = ['learn', 'learn', 'learn', 'revise', 'revise', 'mock'];
+         const dummyPlan = [];
+         for (let d = 1; d <= 14; d++) {
+           const dt = new Date(Date.now() + 86400000 * d);
+           dummyPlan.push({
+             date: dt.toISOString().split('T')[0],
+             subject_name: defaultSubjects[d % defaultSubjects.length],
+             topic_name: 'General',
+             task_type: taskTypes[d % taskTypes.length],
+             hours_allocated: 3,
+             paper_number: 1
+           });
+         }
          finalContentStr = jsonMode ? JSON.stringify(dummyPlan) : dummyPlan;
       } else if (type === 'notes') {
          finalContentStr = `<h2>Overview of ${extraction.topic}</h2><p>This is a high-yield conceptual summary generated offline.</p><h3>Key Definitions</h3><ul><li><strong>Core Pathophysiology:</strong> Essential to understand for FCPS Part 1.</li></ul><h3>Clinical Limits</h3><p>Remember to always cross-reference with standard guidelines.</p>`;
