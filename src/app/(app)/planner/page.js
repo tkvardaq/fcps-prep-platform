@@ -40,6 +40,7 @@ export default function PlannerPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     loadSchedule()
   }, [weekOffset])
 

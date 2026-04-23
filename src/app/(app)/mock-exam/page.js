@@ -83,7 +83,7 @@ export default function MockExamPage() {
       }
     }
     
-    // If no valid saved state, load fresh (but don't start until user clicks)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     loadFreshQuestions()
   }, [])
 
@@ -129,6 +129,7 @@ export default function MockExamPage() {
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, userAnswers, timeLeft, examStarted, examFinished])
 
   // 3. Timer Logic
@@ -139,9 +140,11 @@ export default function MockExamPage() {
         setTimeLeft(prev => prev - 1)
       }, 1000)
     } else if (examStarted && !examFinished && timeLeft === 0) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       finishExam()
     }
     return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [examStarted, examFinished, timeLeft])
 
   const formatTime = (seconds) => {

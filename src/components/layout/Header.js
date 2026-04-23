@@ -26,7 +26,7 @@ export default function Header() {
       }
     }
     loadProfile()
-  }, [])
+  }, [supabase])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

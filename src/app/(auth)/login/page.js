@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center bg-slate-50 p-4 rounded-lg">
           <p className="text-sm text-slate-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-teal-600 font-semibold hover:text-teal-700">
               Sign up with Invite Code
             </Link>

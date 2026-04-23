@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
     }
 
     fetchLeaderboard()
-  }, [])
+  }, [supabase])
 
   if (loading) {
     return (
@@ -83,7 +83,7 @@ export default function LeaderboardPage() {
               <span className="text-primary">Vanguard</span>
             </h1>
             <p className="text-slate-500 font-sans font-medium text-lg leading-relaxed max-w-md">
-              Elite rankings of the world's most dedicated medical practitioners.
+              Elite rankings of the world&apos;s most dedicated medical practitioners.
             </p>
           </motion.div>
 

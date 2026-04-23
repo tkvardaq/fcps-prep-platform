@@ -58,7 +58,10 @@ export default function SubjectsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    setInsight(CLINICAL_INSIGHTS[Math.floor(Math.random() * CLINICAL_INSIGHTS.length)])
+    const timer = setTimeout(() => {
+      setInsight(CLINICAL_INSIGHTS[Math.floor(Math.random() * CLINICAL_INSIGHTS.length)])
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -114,7 +117,7 @@ export default function SubjectsPage() {
     }
     
     loadSubjects()
-  }, [])
+  }, [supabase])
 
   if (loading) {
      return (
@@ -174,7 +177,7 @@ export default function SubjectsPage() {
                 </h1>
                 <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 relative group/insight">
                   <Sparkles className="absolute -top-3 -right-3 w-6 h-6 text-primary animate-pulse" />
-                  <p className="text-slate-300 text-sm italic leading-relaxed">"{insight.text}"</p>
+                  <p className="text-slate-300 text-sm italic leading-relaxed">&quot;{insight.text}&quot;</p>
                   <p className="text-primary text-[10px] font-black uppercase tracking-[0.2em] mt-3">— {insight.author}</p>
                 </div>
               </div>

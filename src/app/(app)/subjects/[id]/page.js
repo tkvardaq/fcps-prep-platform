@@ -42,8 +42,16 @@ export default function SubjectDetailPage({ params }) {
   const [expandedTopic, setExpandedTopic] = useState(null)
   const [topicMcqCounts, setTopicMcqCounts] = useState({})
   const [groupedTopics, setGroupedTopics] = useState({})
+  const [insight, setInsight] = useState(CLINICAL_INSIGHTS[0])
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInsight(CLINICAL_INSIGHTS[Math.floor(Math.random() * CLINICAL_INSIGHTS.length)])
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     async function loadData() {
@@ -94,7 +102,7 @@ export default function SubjectDetailPage({ params }) {
     }
     
     loadData()
-  }, [subjectId])
+  }, [subjectId, supabase])
 
   if (loading) {
      return (
@@ -220,7 +228,7 @@ export default function SubjectDetailPage({ params }) {
             <div className="space-y-1">
               <h4 className="text-[10px] font-black tracking-[0.3em] uppercase text-primary">Protocol Insight</h4>
               <p className="text-slate-300 text-sm font-medium italic leading-relaxed">
-                "{CLINICAL_INSIGHTS[Math.floor(Math.random() * CLINICAL_INSIGHTS.length)]}"
+                &quot;{insight}&quot;
               </p>
             </div>
           </div>

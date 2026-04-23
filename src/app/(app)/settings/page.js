@@ -56,7 +56,7 @@ export default function SettingsPage() {
       setLoading(false)
     }
     loadProfile()
-  }, [])
+  }, [supabase])
 
   const handleSave = async (e) => {
     e.preventDefault()

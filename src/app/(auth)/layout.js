@@ -8,7 +8,7 @@ export default function AuthLayout({ children }) {
         <div className="max-w-md">
           <h1 className="text-4xl font-bold mb-4 font-sans tracking-tight">FCPS Prep</h1>
           <p className="text-xl text-blue-100 font-light mb-8">
-            Pakistan's #1 FCPS Part 1 Gynae & Obs Prep Platform
+            Pakistan&apos;s #1 FCPS Part 1 Gynae & Obs Prep Platform
           </p>
           <div className="space-y-4">
             <div className="flex items-center space-x-3">

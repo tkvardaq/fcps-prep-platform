@@ -29,42 +29,47 @@ export default function RevisionPage() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
+  const [currentTime, setCurrentTime] = useState(null)
+
   useEffect(() => {
-    loadRevision()
-  }, [])
+    // eslint-disable-next-line
+    setCurrentTime(Date.now())
 
-  async function loadRevision() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    async function loadRevision() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toISOString().split('T')[0]
 
-    // Due items
-    const { data: due } = await supabase
-      .from('revision_queue')
-      .select('*, topics(name, subject_id, subjects(name, color_hex))')
-      .eq('user_id', user.id)
-      .lte('next_review_date', today)
-      .order('next_review_date', { ascending: true })
+      // Due items
+      const { data: due } = await supabase
+        .from('revision_queue')
+        .select('*, topics(name, subject_id, subjects(name, color_hex))')
+        .eq('user_id', user.id)
+        .lte('next_review_date', today)
+        .order('next_review_date', { ascending: true })
 
-    setDueItems(due || [])
+      setDueItems(due || [])
 
-    // All items for retention rate
-    const { data: all } = await supabase
-      .from('revision_queue')
-      .select('ease_factor')
-      .eq('user_id', user.id)
+      // All items for retention rate
+      const { data: all } = await supabase
+        .from('revision_queue')
+        .select('ease_factor')
+        .eq('user_id', user.id)
 
-    setTotalItems(all?.length || 0)
+      setTotalItems(all?.length || 0)
 
-    if (all && all.length > 0) {
-      const avgEase = all.reduce((s, r) => s + Number(r.ease_factor), 0) / all.length
-      const rate = Math.min(98, Math.round(((avgEase - 1.3) / (3.0 - 1.3)) * 60 + 40))
-      setRetentionRate(rate)
+      if (all && all.length > 0) {
+        const avgEase = all.reduce((s, r) => s + Number(r.ease_factor), 0) / all.length
+        const rate = Math.min(98, Math.round(((avgEase - 1.3) / (3.0 - 1.3)) * 60 + 40))
+        setRetentionRate(rate)
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    loadRevision()
+  }, [supabase])
 
   if (loading) {
     return (
@@ -164,8 +169,8 @@ export default function RevisionPage() {
 
             <div className="divide-y divide-slate-50">
               {dueItems.map(item => {
-                const daysSinceLast = item.last_reviewed_at 
-                  ? Math.floor((Date.now() - new Date(item.last_reviewed_at).getTime()) / (1000*60*60*24))
+                const daysSinceLast = item.last_reviewed_at && currentTime
+                  ? Math.floor((currentTime - new Date(item.last_reviewed_at).getTime()) / (1000*60*60*24))
                   : null
 
                 return (

@@ -130,55 +130,56 @@ export default function CourseDetailPage({ params }) {
 
   useEffect(() => {
     if (!course) return
-    loadCourseData()
-  }, [id])
+    
+    async function loadCourseData() {
+      const { data: { user } } = await supabase.auth.getUser()
 
-  async function loadCourseData() {
-    const { data: { user } } = await supabase.auth.getUser()
+      // Match module keywords to actual topics in DB
+      const { data: allTopics } = await supabase
+        .from('topics')
+        .select('*, subjects(name, color_hex)')
 
-    // Match module keywords to actual topics in DB
-    const { data: allTopics } = await supabase
-      .from('topics')
-      .select('*, subjects(name, color_hex)')
-
-    if (allTopics) {
-      // Match each module to relevant topics
-      const matched = course.modules.map(mod => {
-        const matchedTopics = allTopics.filter(t =>
-          mod.topicKeywords.some(kw =>
-            t.name.toLowerCase().includes(kw.toLowerCase())
+      if (allTopics) {
+        // Match each module to relevant topics
+        const matched = course.modules.map(mod => {
+          const matchedTopics = allTopics.filter(t =>
+            mod.topicKeywords.some(kw =>
+              t.name.toLowerCase().includes(kw.toLowerCase())
+            )
           )
-        )
-        return { ...mod, topics: matchedTopics }
-      })
-      setTopics(matched)
-    }
-
-    // Load progress per topic
-    if (user) {
-      const { data: attempts } = await supabase
-        .from('user_attempts')
-        .select('topic_id, is_correct')
-        .eq('user_id', user.id)
-
-      if (attempts) {
-        const byTopic = {}
-        attempts.forEach(a => {
-          if (!byTopic[a.topic_id]) byTopic[a.topic_id] = { total: 0, correct: 0 }
-          byTopic[a.topic_id].total++
-          if (a.is_correct) byTopic[a.topic_id].correct++
+          return { ...mod, topics: matchedTopics }
         })
-
-        const progMap = {}
-        Object.entries(byTopic).forEach(([tid, v]) => {
-          progMap[tid] = { accuracy: Math.round((v.correct / v.total) * 100), total: v.total }
-        })
-        setTopicProgress(progMap)
+        setTopics(matched)
       }
+
+      // Load progress per topic
+      if (user) {
+        const { data: attempts } = await supabase
+          .from('user_attempts')
+          .select('topic_id, is_correct')
+          .eq('user_id', user.id)
+
+        if (attempts) {
+          const byTopic = {}
+          attempts.forEach(a => {
+            if (!byTopic[a.topic_id]) byTopic[a.topic_id] = { total: 0, correct: 0 }
+            byTopic[a.topic_id].total++
+            if (a.is_correct) byTopic[a.topic_id].correct++
+          })
+
+          const progMap = {}
+          Object.entries(byTopic).forEach(([tid, v]) => {
+            progMap[tid] = { accuracy: Math.round((v.correct / v.total) * 100), total: v.total }
+          })
+          setTopicProgress(progMap)
+        }
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
-  }
+    loadCourseData()
+  }, [course, id, supabase])
 
   if (!course) {
     return (

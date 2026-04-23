@@ -9,7 +9,7 @@ export default function VerifyEmailPage() {
       
       <h2 className="text-2xl font-bold text-slate-900 mb-2">Check your email</h2>
       <p className="text-slate-600 mb-8">
-        We've sent a verification link to your email address. Please click the link to activate your account.
+        We&apos;ve sent a verification link to your email address. Please click the link to activate your account.
       </p>
       
       <div className="space-y-4">

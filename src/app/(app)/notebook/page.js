@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { StickyNote, Download, BookOpen, ExternalLink, FileText, BrainCircuit, Sparkles, Copy, Check } from 'lucide-react'
+import { StickyNote, Download, BookOpen, ExternalLink, FileText, BrainCircuit, Sparkles, Copy, Check, Activity, Stethoscope } from 'lucide-react'
+import Link from 'next/link'
 import { toast, Toaster } from 'sonner'
 
 export default function NotebookPage() {
@@ -14,33 +15,33 @@ export default function NotebookPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Load saved notes
+      const { data: notesData } = await supabase
+        .from('notes')
+        .select('*, topics(name, subjects(name))')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      setNotes(notesData || [])
+
+      // Load weak topics for study recommendations
+      const { data: weak } = await supabase
+        .from('weak_topics')
+        .select('*, topics(name), subjects(name)')
+        .eq('user_id', user.id)
+        .order('accuracy_percent', { ascending: true })
+        .limit(10)
+
+      setWeakTopics(weak || [])
+      setLoading(false)
+    }
+
     loadData()
-  }, [])
-
-  async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    // Load saved notes
-    const { data: notesData } = await supabase
-      .from('notes')
-      .select('*, topics(name, subjects(name))')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    setNotes(notesData || [])
-
-    // Load weak topics for study recommendations
-    const { data: weak } = await supabase
-      .from('weak_topics')
-      .select('*, topics(name), subjects(name)')
-      .eq('user_id', user.id)
-      .order('accuracy_percent', { ascending: true })
-      .limit(10)
-
-    setWeakTopics(weak || [])
-    setLoading(false)
-  }
+  }, [supabase])
 
   const exportForNotebookLM = () => {
     // Generate NotebookLM-compatible study document

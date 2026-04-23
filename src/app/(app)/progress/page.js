@@ -15,84 +15,84 @@ export default function ProgressPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    async function loadProgress() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { count: totalAttempts } = await supabase
+        .from('user_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      const { count: correctCount } = await supabase
+        .from('user_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_correct', true)
+
+      const { count: totalSessions } = await supabase
+        .from('user_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+
+      const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0
+      const { data: profile } = await supabase.from('user_profiles').select('exam_date').eq('id', user.id).single()
+
+      setStats({
+        totalAttempts: totalAttempts || 0,
+        accuracy,
+        sessions: totalSessions || 0,
+        streak: 0,
+        topicsMastered: 0,
+        examDate: profile?.exam_date
+      })
+
+      const fourteenDaysAgo = new Date()
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+
+      const { data: recentSessions } = await supabase
+        .from('user_sessions')
+        .select('completed_at, total_questions, correct_answers')
+        .eq('user_id', user.id)
+        .gte('completed_at', fourteenDaysAgo.toISOString())
+        .order('completed_at', { ascending: true })
+
+      const byDate = {}
+      recentSessions?.forEach(s => {
+        const day = new Date(s.completed_at).toLocaleDateString('en-US', { weekday: 'short' })
+        if (!byDate[day]) byDate[day] = { total: 0, correct: 0 }
+        byDate[day].total += s.total_questions
+        byDate[day].correct += s.correct_answers
+      })
+
+      setWeeklyTrend(Object.entries(byDate).map(([day, v]) => ({
+        day,
+        accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0,
+      })))
+
+      const { data: subAttempts } = await supabase
+        .from('user_attempts')
+        .select('subject_id, is_correct, subjects(name)')
+        .eq('user_id', user.id)
+
+      const bySub = {}
+      subAttempts?.forEach(a => {
+        if (!bySub[a.subject_id]) bySub[a.subject_id] = { name: a.subjects?.name || 'Unknown', total: 0, correct: 0 }
+        bySub[a.subject_id].total++
+        if (a.is_correct) bySub[a.subject_id].correct++
+      })
+
+      setSubjectPerf(Object.values(bySub).map(s => ({
+        name: s.name,
+        accuracy: Math.round((s.correct / s.total) * 100),
+        total: s.total
+      })).sort((a, b) => b.total - a.total))
+
+      setLoading(false)
+    }
+
     loadProgress()
-  }, [])
-
-  async function loadProgress() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { count: totalAttempts } = await supabase
-      .from('user_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-
-    const { count: correctCount } = await supabase
-      .from('user_attempts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('is_correct', true)
-
-    const { count: totalSessions } = await supabase
-      .from('user_sessions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-
-    const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0
-    const { data: profile } = await supabase.from('user_profiles').select('exam_date').eq('id', user.id).single()
-
-    setStats({
-      totalAttempts: totalAttempts || 0,
-      accuracy,
-      sessions: totalSessions || 0,
-      streak: 0,
-      topicsMastered: 0,
-      examDate: profile?.exam_date
-    })
-
-    const fourteenDaysAgo = new Date()
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
-    const { data: recentSessions } = await supabase
-      .from('user_sessions')
-      .select('completed_at, total_questions, correct_answers')
-      .eq('user_id', user.id)
-      .gte('completed_at', fourteenDaysAgo.toISOString())
-      .order('completed_at', { ascending: true })
-
-    const byDate = {}
-    recentSessions?.forEach(s => {
-      const day = new Date(s.completed_at).toLocaleDateString('en-US', { weekday: 'short' })
-      if (!byDate[day]) byDate[day] = { total: 0, correct: 0 }
-      byDate[day].total += s.total_questions
-      byDate[day].correct += s.correct_answers
-    })
-
-    setWeeklyTrend(Object.entries(byDate).map(([day, v]) => ({
-      day,
-      accuracy: v.total > 0 ? Math.round((v.correct / v.total) * 100) : 0,
-    })))
-
-    const { data: subAttempts } = await supabase
-      .from('user_attempts')
-      .select('subject_id, is_correct, subjects(name)')
-      .eq('user_id', user.id)
-
-    const bySub = {}
-    subAttempts?.forEach(a => {
-      if (!bySub[a.subject_id]) bySub[a.subject_id] = { name: a.subjects?.name || 'Unknown', total: 0, correct: 0 }
-      bySub[a.subject_id].total++
-      if (a.is_correct) bySub[a.subject_id].correct++
-    })
-
-    setSubjectPerf(Object.values(bySub).map(s => ({
-      name: s.name,
-      accuracy: Math.round((s.correct / s.total) * 100),
-      total: s.total
-    })).sort((a, b) => b.total - a.total))
-
-    setLoading(false)
-  }
+  }, [supabase])
 
   if (loading) return (
     <div className="min-h-screen bg-[#FFFBFB] flex items-center justify-center relative overflow-hidden">

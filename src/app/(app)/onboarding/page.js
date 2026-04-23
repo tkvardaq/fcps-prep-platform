@@ -59,7 +59,7 @@ export default function OnboardingPage() {
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold">1/2</span>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome! Let's set up your study plan</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome! Let&apos;s set up your study plan</h1>
             <p className="text-slate-600">Personalizing your experience will help us build the perfect schedule.</p>
           </div>
 
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-4">Diagnostic Quiz</h2>
           <p className="text-lg text-slate-600 mb-8 max-w-md">
-            We'll ask you 35 quick questions across all subjects to find your weak areas. This allows us to generate a highly personalized study schedule.
+            We&apos;ll ask you 35 quick questions across all subjects to find your weak areas. This allows us to generate a highly personalized study schedule.
           </p>
           <div className="bg-orange-50 text-orange-800 p-4 rounded-lg mb-8 text-sm max-w-md text-left text-sm font-medium">
             <p className="flex items-center gap-2">

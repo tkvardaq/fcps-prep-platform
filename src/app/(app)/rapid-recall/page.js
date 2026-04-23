@@ -33,7 +33,7 @@ export default function RapidRecallPage() {
       setLoading(false)
     }
     fetchRandom()
-  }, [])
+  }, [supabase])
 
   const handleResponse = async (knewIt) => {
     const currentQ = questions[currentIndex]

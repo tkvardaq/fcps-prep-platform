@@ -30,26 +30,26 @@ export default function DiagnosticResultsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    loadResults()
-  }, [])
+    async function loadResults() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-  async function loadResults() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+      const { data, error } = await supabase
+        .from('diagnostic_results')
+        .select('*, subjects(name, color_hex)')
+        .eq('user_id', user.id)
+        .order('score_percent', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('diagnostic_results')
-      .select('*, subjects(name, color_hex)')
-      .eq('user_id', user.id)
-      .order('score_percent', { ascending: false })
+      if (error) {
+        toast.error('Failed to load clinical diagnostics')
+      }
 
-    if (error) {
-      toast.error('Failed to load clinical diagnostics')
+      setResults(data || [])
+      setLoading(false)
     }
 
-    setResults(data || [])
-    setLoading(false)
-  }
+    loadResults()
+  }, [supabase])
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
