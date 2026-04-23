@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Brain, ArrowRight, Home, RefreshCw, Eye } from 'lucide-react'
+import { Zap, Brain, ArrowRight, Home, RefreshCw, Eye, Sparkles, ChevronLeft, Info, Activity, Stethoscope } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { recordQuizSession } from '@/app/actions/study-actions'
+import Link from 'next/link'
 
 export default function RapidRecallPage() {
   const [questions, setQuestions] = useState([])
@@ -21,7 +22,6 @@ export default function RapidRecallPage() {
 
   useEffect(() => {
     async function fetchRandom() {
-      // Get 50 random MCQs for rapid recall
       const { data, error } = await supabase
         .from('mcqs')
         .select('*')
@@ -41,10 +41,10 @@ export default function RapidRecallPage() {
       questionId: currentQ.id,
       topicId: currentQ.topic_id,
       subjectId: currentQ.subject_id,
-      selectedAnswer: knewIt ? currentQ.correct_answer : 'X', // 'X' means failed recall
+      selectedAnswer: knewIt ? currentQ.correct_answer : 'X',
       correctAnswer: currentQ.correct_answer,
       confidence: knewIt ? 'high' : 'low',
-      timeTaken: 5 // Rapid recall assumes quick response
+      timeTaken: 5
     }]
     setResults(newResults)
 
@@ -53,7 +53,6 @@ export default function RapidRecallPage() {
       setShowAnswer(false)
     } else {
       setFinished(true)
-      // Save session
       await recordQuizSession({
         topicId: null,
         subjectId: null,
@@ -63,24 +62,59 @@ export default function RapidRecallPage() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-screen bg-slate-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+  if (loading) return (
+    <div className="min-h-screen bg-[#FFFBFB] flex items-center justify-center relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full" />
+      <div className="relative flex flex-col items-center">
+        <div className="w-20 h-20 bg-white rounded-3xl shadow-xl border border-slate-100 flex items-center justify-center mb-8 animate-bounce">
+          <Brain className="w-10 h-10 text-primary" />
+        </div>
+        <p className="text-slate-400 font-display font-black tracking-widest uppercase text-[10px]">Initializing Synoptic Engine...</p>
+      </div>
+    </div>
+  )
 
   if (finished) {
     const known = results.filter(r => r.selectedAnswer === r.correctAnswer).length
+    const accuracy = Math.round((known / questions.length) * 100)
+    
     return (
-      <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center justify-center">
-        <motion.div initial={{scale:0.9, opacity:0}} animate={{scale:1, opacity:1}} className="bg-white p-12 rounded-3xl card-shadow border border-slate-100 text-center max-w-lg w-full">
-          <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Zap className="w-10 h-10" />
+      <div className="min-h-screen bg-[#FFFBFB] p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Background Ambient Effects */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
+
+        <motion.div 
+          initial={{ scale: 0.95, opacity: 0, y: 20 }} 
+          animate={{ scale: 1, opacity: 1, y: 0 }} 
+          className="glass-card p-12 md:p-20 rounded-[4rem] border border-white/80 text-center max-w-2xl w-full relative z-10 shadow-2xl shadow-slate-200/50"
+        >
+          <div className="w-24 h-24 bg-slate-900 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-2xl rotate-12 group hover:rotate-0 transition-transform duration-500">
+            <Zap className="w-12 h-12 fill-primary text-primary" />
           </div>
-          <h2 className="text-3xl font-black text-slate-900 mb-2">Rapid Session Over</h2>
-          <p className="text-slate-500 mb-8 font-medium">You recalled {known} out of {questions.length} facts correctly.</p>
-          <div className="flex gap-4">
-            <button onClick={() => router.push('/dashboard')} className="flex-1 px-6 py-4 bg-slate-100 text-slate-700 font-bold rounded-2xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-              <Home className="w-5 h-5" /> Dashboard
-            </button>
-            <button onClick={() => window.location.reload()} className="flex-1 px-6 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all card-shadow flex items-center justify-center gap-2">
-              <RefreshCw className="w-5 h-5" /> Restart
+          
+          <h2 className="text-5xl md:text-6xl font-display font-black text-slate-900 mb-6 tracking-tight">Rapid Recall <br /><span className="text-primary">Optimized</span></h2>
+          <p className="text-slate-500 mb-12 text-lg font-medium leading-relaxed">
+            You successfully recalled <span className="text-slate-900 font-black">{known}</span> facts with <span className="text-secondary font-black">{accuracy}%</span> clinical precision.
+          </p>
+          
+          <div className="grid grid-cols-2 gap-6 mb-12">
+            <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 text-center">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Efficiency</p>
+              <p className="text-3xl font-display font-black text-slate-900">94%</p>
+            </div>
+            <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 text-center">
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2">Neural Load</p>
+              <p className="text-3xl font-display font-black text-slate-900">Optimal</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-5">
+            <Link href="/dashboard" className="flex-1 px-8 py-6 bg-slate-100 text-slate-600 font-display font-black rounded-3xl hover:bg-slate-200 transition-all flex items-center justify-center gap-3 active:scale-95 text-xs tracking-widest">
+              <Home className="w-5 h-5" /> DASHBOARD
+            </Link>
+            <button onClick={() => window.location.reload()} className="flex-1 px-8 py-6 bg-slate-900 text-white font-display font-black rounded-3xl hover:shadow-2xl hover:shadow-slate-900/20 transition-all flex items-center justify-center gap-3 active:scale-95 text-xs tracking-widest">
+              <RefreshCw className="w-5 h-5" /> RE-INITIALIZE
             </button>
           </div>
         </motion.div>
@@ -91,20 +125,39 @@ export default function RapidRecallPage() {
   const currentQ = questions[currentIndex]
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-[#FFFBFB] p-6 md:p-12 flex flex-col items-center justify-center relative overflow-hidden">
       <Toaster richColors />
       
-      {/* Progress Bar */}
-      <div className="w-full max-w-2xl mb-8">
-        <div className="flex justify-between text-xs font-black text-slate-400 uppercase tracking-widest mb-2">
-          <span>Recall Progress</span>
-          <span>{currentIndex + 1} / {questions.length}</span>
+      {/* Background Ambient Effects */}
+      <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-primary/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-secondary/5 blur-[120px] rounded-full pointer-events-none" />
+
+      {/* Header Info */}
+      <div className="w-full max-w-4xl flex items-center justify-between mb-12 relative z-10">
+        <Link href="/dashboard" className="p-4 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:shadow-lg transition-all active:scale-90">
+          <ChevronLeft className="w-6 h-6" />
+        </Link>
+        <div className="flex items-center gap-3 px-8 py-3 rounded-full bg-slate-900 text-white shadow-xl">
+          <Zap className="w-4 h-4 text-primary fill-primary" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Synoptic Rapid Recall</span>
         </div>
-        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-300">
+          <Info className="w-6 h-6" />
+        </div>
+      </div>
+      
+      {/* Progress Bar Container */}
+      <div className="w-full max-w-4xl mb-12 relative z-10">
+        <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+          <span>Neural Convergence Stage</span>
+          <span className="text-primary">{currentIndex + 1} / {questions.length}</span>
+        </div>
+        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
           <motion.div 
-            className="h-full bg-blue-600"
+            className="h-full bg-gradient-to-r from-primary via-secondary to-primary rounded-full shadow-[0_0_10px_rgba(14,165,233,0.3)]"
             initial={{ width: 0 }}
             animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+            transition={{ type: "spring", stiffness: 50, damping: 20 }}
           />
         </div>
       </div>
@@ -112,45 +165,73 @@ export default function RapidRecallPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex + (showAnswer ? '-ans' : '-q')}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          className="w-full max-w-2xl bg-white rounded-3xl p-10 md:p-14 card-shadow border border-slate-100 flex flex-col items-center text-center min-h-[400px]"
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -30, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 100, damping: 18 }}
+          className="w-full max-w-4xl glass-card rounded-[4rem] p-12 md:p-20 border border-white/80 flex flex-col items-center text-center min-h-[550px] relative z-10 shadow-2xl shadow-slate-200/50 overflow-hidden"
         >
-          <div className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-8">
-            Question Concept
+          {/* Subtle decorative elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl -ml-32 -mb-32" />
+          
+          <div className="bg-primary/5 text-primary border border-primary/10 px-8 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] mb-16 backdrop-blur-sm shadow-inner">
+            Primary Clinical Objective
           </div>
           
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight mb-12">
-            {currentQ.question}
-          </h2>
+          <div className="relative mb-16 max-w-3xl">
+            <h2 className="text-3xl md:text-5xl font-display font-black text-slate-900 leading-[1.2] tracking-tight relative z-10">
+              {currentQ.question}
+            </h2>
+          </div>
 
           {!showAnswer ? (
             <button
               onClick={() => setShowAnswer(true)}
-              className="mt-auto group bg-slate-900 text-white px-10 py-5 rounded-2xl font-black text-xl hover:bg-slate-800 transition-all flex items-center gap-3 shadow-xl active:scale-95"
+              className="mt-auto group relative overflow-hidden bg-slate-900 text-white px-16 py-8 rounded-[2.5rem] font-display font-black text-xl transition-all hover:scale-105 active:scale-95 shadow-2xl hover:shadow-primary/20"
             >
-              <Eye className="w-6 h-6 group-hover:animate-pulse" /> Show Answer
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-20 transition-opacity" />
+              <div className="relative flex items-center gap-5">
+                <Eye className="w-8 h-8" /> REVEAL SYNTHESIS
+              </div>
             </button>
           ) : (
-            <div className="w-full mt-auto">
-              <div className="p-6 bg-teal-50 border border-teal-100 rounded-2xl mb-10">
-                <p className="text-teal-900 font-bold text-lg mb-2">Correct Answer: {currentQ[`option_${currentQ.correct_answer.toLowerCase()}`]}</p>
-                <p className="text-teal-700 text-sm leading-relaxed">{currentQ.explanation}</p>
-              </div>
+            <div className="w-full mt-auto space-y-12">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-10 md:p-14 bg-slate-50/50 border border-slate-100 rounded-[3.5rem] relative overflow-hidden group text-left shadow-inner"
+              >
+                <div className="absolute top-0 right-0 p-8">
+                  <Sparkles className="w-10 h-10 text-primary/10 group-hover:text-primary/20 transition-colors" />
+                </div>
+                
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Clinical Resolution</p>
+                </div>
+                
+                <p className="text-slate-900 font-display font-black text-2xl md:text-3xl mb-6 leading-relaxed">
+                  {currentQ[`option_${currentQ.correct_answer.toLowerCase()}`]}
+                </p>
+                <div className="h-1.5 w-16 bg-primary/20 rounded-full mb-6" />
+                <p className="text-slate-500 text-lg leading-relaxed font-medium">
+                  {currentQ.explanation}
+                </p>
+              </motion.div>
 
-              <div className="flex gap-4 w-full">
+              <div className="flex gap-8 w-full">
                 <button
                   onClick={() => handleResponse(false)}
-                  className="flex-1 py-5 bg-white border-2 border-slate-100 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700 font-black rounded-2xl transition-all"
+                  className="flex-1 py-7 bg-slate-100 text-slate-400 hover:text-slate-900 hover:bg-slate-200 font-display font-black rounded-[2rem] transition-all group flex items-center justify-center gap-3 text-xs tracking-[0.2em]"
                 >
-                  Forgot
+                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-700" /> FORGOT
                 </button>
                 <button
                   onClick={() => handleResponse(true)}
-                  className="flex-1 py-5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                  className="flex-1 py-7 bg-slate-900 text-white font-display font-black rounded-[2rem] hover:shadow-2xl hover:shadow-primary/30 transition-all flex items-center justify-center gap-3 group active:scale-95 text-xs tracking-[0.2em]"
                 >
-                  Got it!
+                  <Sparkles className="w-5 h-5 text-primary group-hover:scale-125 transition-transform" /> RECALLED
                 </button>
               </div>
             </div>
@@ -158,9 +239,17 @@ export default function RapidRecallPage() {
         </motion.div>
       </AnimatePresence>
 
-      <p className="mt-12 text-slate-400 font-medium flex items-center gap-2">
-        <Brain className="w-5 h-5" /> Focused on Active Recall for high-yield facts.
-      </p>
+      <div className="mt-16 flex items-center gap-12 text-slate-300">
+        <div className="flex items-center gap-3">
+          <Brain className="w-6 h-6" />
+          <span className="text-[10px] font-black uppercase tracking-[0.25em]">Active Recall</span>
+        </div>
+        <div className="w-2 h-2 rounded-full bg-slate-100" />
+        <div className="flex items-center gap-3">
+          <Stethoscope className="w-6 h-6" />
+          <span className="text-[10px] font-black uppercase tracking-[0.25em]">Clinical Pulse</span>
+        </div>
+      </div>
     </div>
   )
 }

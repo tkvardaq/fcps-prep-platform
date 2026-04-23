@@ -96,146 +96,217 @@ export default function NotebookPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[50vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-primary/10 border-t-primary rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <StickyNote size={24} className="text-primary animate-pulse" />
+          </div>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Compiling Archives</p>
       </div>
     )
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-10 font-sans">
       <Toaster richColors position="top-center" />
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="glass-card p-10 md:p-14 rounded-[3.5rem] border border-white/80 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -mr-48 -mt-48 transition-all group-hover:bg-primary/10 duration-1000" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-10 relative z-10">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
-              <StickyNote className="w-8 h-8 text-blue-600" /> Study Notebook
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-primary/5 border border-primary/10 rounded-xl mb-6">
+              <Sparkles size={14} className="text-primary" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Intelligence Repository</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-display font-black text-slate-900 tracking-tight mb-4">
+              Study <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Notebook</span>
             </h1>
-            <p className="text-slate-500">
-              Export your notes and weak areas for Google NotebookLM, Anki, or custom study tools.
+            <p className="text-slate-400 text-lg font-medium max-w-xl leading-relaxed">
+              Synthesize your clinical insights for Google NotebookLM, Anki, and cross-platform analysis.
             </p>
           </div>
 
           <button
             onClick={exportForNotebookLM}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shrink-0"
+            className="group/btn bg-slate-900 hover:bg-primary text-white px-10 py-5 rounded-[2rem] font-display font-black transition-all duration-500 flex items-center gap-4 shrink-0 shadow-2xl active:scale-95 relative overflow-hidden"
           >
-            <Download className="w-5 h-5" /> Export for NotebookLM
+            <Download className="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform" />
+            <span className="uppercase tracking-[0.2em] text-xs relative z-10">Export Archives</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500" />
           </button>
         </div>
       </div>
 
-      {/* NotebookLM How-To */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-6">
-        <h2 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-blue-600" /> Use with Google NotebookLM
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl">
-            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold mb-2">1</div>
-            <p className="font-bold text-slate-800 mb-1">Export Notes</p>
-            <p className="text-slate-600">Click &quot;Export for NotebookLM&quot; to download your complete study notes as a Markdown file.</p>
+      {/* Modern How-To Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { 
+            title: 'Export Intelligence', 
+            desc: 'Extract your complete clinical narrative as a structured Markdown protocol.', 
+            icon: Download, 
+            color: 'primary',
+            bg: 'bg-blue-50/50' 
+          },
+          { 
+            title: 'Neural Upload', 
+            desc: 'Interface with NotebookLM to create a deep clinical context window for your AI assistant.', 
+            icon: BrainCircuit, 
+            color: 'secondary',
+            bg: 'bg-purple-50/50' 
+          },
+          { 
+            title: 'Synaptic Synthesis', 
+            desc: 'Generate audio evaluations, flashcards, and cross-sectional insights from your data.', 
+            icon: Sparkles, 
+            color: 'teal',
+            bg: 'bg-teal-50/50' 
+          }
+        ].map((step, i) => (
+          <div key={i} className="glass-card p-8 rounded-[2.5rem] border border-white/80 shadow-lg hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
+            <div className={`absolute top-0 right-0 w-32 h-32 ${step.bg} rounded-full blur-[40px] -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000`} />
+            <div className="relative z-10 space-y-6">
+              <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl group-hover:rotate-12 transition-transform duration-500">
+                <step.icon size={28} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-display font-black text-slate-900 tracking-tight">{step.title}</h3>
+                <p className="text-slate-400 text-sm font-medium leading-relaxed">{step.desc}</p>
+              </div>
+            </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl">
-            <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center font-bold mb-2">2</div>
-            <p className="font-bold text-slate-800 mb-1">Upload to NotebookLM</p>
-            <p className="text-slate-600">Go to <a href="https://notebooklm.google.com" target="_blank" rel="noopener" className="text-blue-600 hover:underline">notebooklm.google.com</a> and create a new notebook. Upload the file as a source.</p>
-          </div>
-          <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl">
-            <div className="w-8 h-8 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center font-bold mb-2">3</div>
-            <p className="font-bold text-slate-800 mb-1">Get AI Study Aid</p>
-            <p className="text-slate-600">Ask questions, generate audio overviews, create flashcards, and get deep insights from your notes.</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Notes List (2/3) */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-bold text-slate-900">Your Study Notes ({notes.length})</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Notes List (Left) */}
+        <div className="lg:col-span-8 space-y-8">
+          <div className="flex items-center justify-between px-4">
+            <h2 className="text-2xl font-display font-black text-slate-900 tracking-tight flex items-center gap-4">
+              Saved Archives 
+              <span className="text-sm font-black bg-slate-100 px-3 py-1 rounded-lg text-slate-400">{notes.length}</span>
+            </h2>
+          </div>
           
           {notes.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-6">
               {notes.map((note, idx) => (
-                <div key={note.id} className="bg-white rounded-2xl border border-slate-100 card-shadow p-5 hover:border-blue-200 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-bold text-slate-900">{note.title || note.topics?.name}</h3>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {note.topics?.subjects?.name} · {new Date(note.created_at).toLocaleDateString()}
-                        {note.reference_books?.length > 0 && ` · ${note.reference_books.join(', ')}`}
-                      </p>
+                <div key={note.id} className="glass-card p-8 md:p-10 rounded-[3rem] border border-white/80 shadow-md hover:shadow-2xl hover:border-primary/20 transition-all duration-500 group">
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="space-y-2">
+                      <h3 className="text-2xl font-display font-black text-slate-900 group-hover:text-primary transition-colors leading-tight">{note.title || note.topics?.name}</h3>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{note.topics?.subjects?.name}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(note.created_at).toLocaleDateString()}</span>
+                        {note.reference_books?.length > 0 && (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                            <span className="text-[10px] font-black text-primary uppercase tracking-tight">{note.reference_books.join(', ')}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => copyNoteContent(note, idx)}
-                      className="text-slate-400 hover:text-blue-600 transition-colors p-2"
-                      title="Copy note content"
+                      className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm active:scale-90"
+                      title="Copy archive content"
                     >
-                      {copied === idx ? <Check className="w-4 h-4 text-teal-500" /> : <Copy className="w-4 h-4" />}
+                      {copied === idx ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                     </button>
                   </div>
                   
-                  {/* Preview */}
-                  <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                    {note.content_html?.replace(/<[^>]*>/g, '').slice(0, 300)}...
-                  </p>
+                  <div className="relative">
+                    <p className="text-slate-600 text-base leading-relaxed line-clamp-4 font-medium italic">
+                      &quot;{note.content_html?.replace(/<[^>]*>/g, '').slice(0, 400)}...&quot;
+                    </p>
+                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/80 to-transparent group-hover:from-white/40 transition-colors" />
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-12 text-center">
-              <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-slate-900 mb-2">No Notes Yet</h3>
-              <p className="text-slate-500 text-sm">Visit a topic from the Subjects page to generate AI-powered study notes.</p>
+            <div className="glass-card p-20 rounded-[4rem] border border-dashed border-slate-200 bg-slate-50/30 text-center space-y-6">
+              <div className="w-24 h-24 bg-white rounded-[2.5rem] flex items-center justify-center mx-auto shadow-sm border border-slate-100">
+                <FileText className="w-12 h-12 text-slate-200 animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight uppercase">Null Repository</h3>
+                <p className="text-slate-400 font-medium max-w-xs mx-auto">Visit your clinical modules to synthesize AI-powered research notes and build your repository.</p>
+              </div>
+              <Link href="/subjects" className="inline-flex items-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all shadow-xl active:scale-95">
+                Initialize Research
+              </Link>
             </div>
           )}
         </div>
 
-        {/* Sidebar - Weak Areas + Quick Links (1/3) */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900">Focus Areas</h2>
-          
-          {weakTopics.length > 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
-              <div className="p-4 bg-orange-50 border-b border-orange-100">
-                <p className="text-sm font-bold text-orange-800">⚡ Topics Needing Review</p>
-              </div>
-              <div className="divide-y divide-slate-50">
-                {weakTopics.map(w => (
-                  <div key={w.id} className="p-4 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-sm text-slate-800">{w.topics?.name}</p>
-                      <p className="text-xs text-slate-500">{w.subjects?.name}</p>
+        {/* Sidebar (Right) */}
+        <div className="lg:col-span-4 space-y-10">
+          <div className="space-y-6">
+            <h2 className="text-2xl font-display font-black text-slate-900 tracking-tight px-4">Neural Feedback</h2>
+            
+            {weakTopics.length > 0 ? (
+              <div className="glass-card rounded-[3rem] border border-white/80 shadow-xl overflow-hidden group">
+                <div className="p-8 bg-slate-900 text-white flex items-center gap-4">
+                  <Activity size={24} className="text-primary animate-pulse" />
+                  <p className="text-sm font-display font-black uppercase tracking-[0.2em]">Priority Vectors</p>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {weakTopics.map(w => (
+                    <div key={w.id} className="p-8 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div className="space-y-1">
+                        <p className="font-black text-slate-800 tracking-tight leading-tight">{w.topics?.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">{w.subjects?.name}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xl font-display font-black ${w.accuracy_percent < 50 ? 'text-rose-500' : 'text-amber-500'}`}>
+                          {w.accuracy_percent}%
+                        </span>
+                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Accuracy</p>
+                      </div>
                     </div>
-                    <span className="text-sm font-bold text-orange-600">{w.accuracy_percent}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <Link href="/quiz" className="block w-full p-6 text-center bg-slate-50 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
+                  Initiate Recalibration
+                </Link>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-6 text-center">
-              <BrainCircuit className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">No weak areas identified yet. Keep practicing!</p>
-            </div>
-          )}
+            ) : (
+              <div className="glass-card p-12 rounded-[3rem] border border-white/80 shadow-lg text-center space-y-4">
+                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto border border-slate-100">
+                  <BrainCircuit className="w-8 h-8 text-slate-200 animate-pulse" />
+                </div>
+                <p className="text-slate-400 text-sm font-medium leading-relaxed">No critical growth vectors identified. Maintain consistency.</p>
+              </div>
+            )}
+          </div>
 
-          {/* External Links */}
-          <div className="bg-white rounded-2xl border border-slate-100 card-shadow p-5">
-            <h3 className="font-bold text-slate-900 mb-4">AI Study Tools</h3>
-            <div className="space-y-2">
-              <a href="https://notebooklm.google.com" target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-sm font-medium text-slate-800">
-                <span>Google NotebookLM</span>
-                <ExternalLink className="w-4 h-4 text-slate-400" />
-              </a>
-              <a href="https://ankiweb.net" target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-sm font-medium text-slate-800">
-                <span>Anki Flashcards</span>
-                <ExternalLink className="w-4 h-4 text-slate-400" />
-              </a>
+          {/* Clinical Toolset */}
+          <div className="glass-card p-10 rounded-[3.5rem] border border-white/80 shadow-xl space-y-8 relative overflow-hidden group">
+            <div className="absolute bottom-0 right-0 p-8 opacity-5 text-slate-900 -mr-8 -mb-8 group-hover:rotate-45 transition-transform duration-1000">
+              <Stethoscope size={120} />
+            </div>
+            <h3 className="text-xl font-display font-black text-slate-900 tracking-tight">External Protocols</h3>
+            <div className="space-y-4 relative z-10">
+              {[
+                { name: 'Google NotebookLM', url: 'https://notebooklm.google.com' },
+                { name: 'Anki Flashcards', url: 'https://ankiweb.net' },
+                { name: 'UpToDate Clinical', url: 'https://uptodate.com' }
+              ].map((tool, i) => (
+                <a 
+                  key={i}
+                  href={tool.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-5 bg-slate-50/50 rounded-2xl hover:bg-white hover:shadow-lg transition-all duration-300 text-sm font-black text-slate-800 border border-slate-100 group/item"
+                >
+                  <span className="uppercase tracking-widest text-[10px]">{tool.name}</span>
+                  <ExternalLink className="w-4 h-4 text-slate-300 group-hover/item:text-primary transition-colors" />
+                </a>
+              ))}
             </div>
           </div>
         </div>

@@ -2,7 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, BrainCircuit, Calendar, LineChart, Trophy, FileText, Settings, Award, GraduationCap, StickyNote, Library } from 'lucide-react'
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  BrainCircuit, 
+  Calendar, 
+  LineChart, 
+  Trophy, 
+  FileText, 
+  Settings, 
+  Award, 
+  GraduationCap, 
+  StickyNote, 
+  Library,
+  ChevronRight,
+  Stethoscope
+} from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
@@ -23,67 +38,61 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="hidden md:flex flex-col w-64 bg-white border-r border-rose-100/50 text-slate-600">
-      <div className="h-20 flex items-center px-8">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-rose-500 rounded-2xl soft-glow-pink">
-            <GraduationCap className="w-6 h-6 text-white" />
+    <div className="hidden md:flex flex-col w-72 bg-white border-r border-slate-100 text-slate-600 h-screen sticky top-0 overflow-hidden shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
+      <div className="h-24 flex items-center px-10">
+        <Link href="/dashboard" className="flex items-center gap-4 group">
+          <div className="p-3 bg-slate-900 rounded-2xl text-white shadow-xl transition-transform group-hover:scale-110 duration-500">
+            <Stethoscope className="w-6 h-6" />
           </div>
-          <span className="text-xl font-bold text-slate-900 tracking-tight">FCPS<span className="text-rose-500 ml-1">✨</span></span>
-        </div>
+          <span className="text-2xl font-display font-black text-slate-900 tracking-tighter">
+            FCPS<span className="text-primary">.ai</span>
+          </span>
+        </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+      <div className="flex-1 overflow-y-auto py-8 px-6 space-y-2 custom-scrollbar">
+        <div className="px-4 mb-6">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Clinical Protocol</span>
+        </div>
+        
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const Icon = item.icon
-          
-          // Map emojis to nav items for "playful" feel
-          const emojiMap = {
-            'Dashboard': '🏠',
-            'Courses': '🎓',
-            'Study': '📖',
-            'Quiz': '🧠',
-            'Mock Exam': '🎯',
-            'Planner': '📅',
-            'Revision': '🔄',
-            'Progress': '📈',
-            'Notebook': '📓',
-            'Library': '📚',
-            'Leaderboard': '🏆'
-          }
 
           return (
             <Link
               key={item.name}
               href={item.href}
               className={clsx(
-                "group flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-300 font-bold text-sm hover-lift",
+                "group flex items-center justify-between px-5 py-4 rounded-[1.5rem] transition-all duration-300 font-bold text-sm",
                 isActive 
-                  ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100/50" 
-                  : "text-slate-500 hover:bg-slate-50 hover:text-rose-500"
+                  ? "bg-slate-900 text-white shadow-2xl shadow-slate-200" 
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
-              <div className="flex items-center space-x-3">
-                <Icon className={clsx("w-5 h-5 transition-transform group-hover:scale-110", isActive ? "text-rose-500" : "text-slate-400")} />
-                <span>{item.name}</span>
+              <div className="flex items-center space-x-4">
+                <Icon className={clsx("w-5 h-5 transition-all duration-500", isActive ? "text-primary scale-110" : "text-slate-300 group-hover:text-slate-900")} />
+                <span className={clsx("tracking-tight transition-all", isActive ? "translate-x-1" : "group-hover:translate-x-1")}>{item.name}</span>
               </div>
-              <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">{emojiMap[item.name]}</span>
+              {isActive && <ChevronRight className="w-4 h-4 text-primary animate-in slide-in-from-left-2 duration-300" />}
             </Link>
           )
         })}
       </div>
 
-      <div className="p-6 border-t border-rose-50">
+      <div className="p-8 border-t border-slate-50">
         <Link 
           href="/settings"
-          className="flex items-center space-x-3 px-4 py-3 rounded-2xl hover:bg-slate-50 text-slate-500 hover:text-rose-500 transition-all font-bold text-sm hover-lift"
+          className={clsx(
+            "flex items-center space-x-4 px-5 py-4 rounded-[1.5rem] transition-all duration-300 font-bold text-sm",
+            pathname === '/settings' ? "bg-slate-900 text-white shadow-2xl shadow-slate-200" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+          )}
         >
-          <Settings className="w-5 h-5 text-slate-400" />
-          <span>Settings</span>
-          <span className="ml-auto text-xs">⚙️</span>
+          <Settings className={clsx("w-5 h-5 transition-all", pathname === '/settings' ? "text-primary scale-110" : "text-slate-300")} />
+          <span className="tracking-tight">System Settings</span>
         </Link>
       </div>
     </div>
   )
 }
+

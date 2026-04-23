@@ -1,24 +1,25 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-primary: #F43F5E; /* Rose-500 */
-  --color-primary-hover: #E11D48;
-  --color-secondary: #8B5CF6; /* Violet-500 */
-  --color-secondary-hover: #7C3AED;
+  --color-primary: #0EA5E9; /* Sky-500 (Clinical Blue) */
+  --color-primary-hover: #0284C7;
+  --color-secondary: #6366F1; /* Indigo-500 (Premium Violet) */
+  --color-secondary-hover: #4F46E5;
   
-  --color-background: #FFFBFB; /* Extremely light pink tint */
-  --color-foreground: #1E293B;
+  --color-background: #F8FAFC; 
+  --color-foreground: #0F172A;
   --color-surface: #FFFFFF;
-  --color-border: #F1F5F9;
+  --color-border: #E2E8F0;
 
-  /* Subject Colors - Pastels */
-  --color-anatomy: #ECFCCB;     /* Lime-100 */
-  --color-pathology: #FEF3C7;   /* Amber-100 */
-  --color-physiology: #E0F2FE;  /* Sky-100 */
-  --color-gynae: #FCE7F3;      /* Pink-100 */
-  --color-medicine: #F3E8FF;   /* Purple-100 */
+  /* Subject Colors - Refined Clinical Pastels */
+  --color-anatomy: #F0FDFA;     /* Teal-50 */
+  --color-pathology: #FEF2F2;   /* Red-50 */
+  --color-physiology: #F0F9FF;  /* Sky-50 */
+  --color-gynae: #FDF2F8;      /* Pink-50 */
+  --color-medicine: #F5F3FF;   /* Violet-50 */
   
-  --font-sans: "Quicksand", "Lexend", "Inter", var(--font-sans);
+  --font-sans: var(--font-poppins);
+  --font-display: var(--font-quicksand);
 }
 
 :root {

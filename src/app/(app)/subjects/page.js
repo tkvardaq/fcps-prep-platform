@@ -3,24 +3,40 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { BookOpen, ChevronRight, Search, Sparkles, Flame, Trophy, GraduationCap, Brain, Stethoscope, FlaskConical, Pill, Bug, Microscope, HeartPulse, BarChart3, Heart, Baby, Bone, Beaker } from 'lucide-react'
+import { 
+  BookOpen, 
+  ChevronRight, 
+  Search, 
+  Sparkles, 
+  Flame, 
+  Trophy, 
+  GraduationCap, 
+  Brain, 
+  Stethoscope, 
+  FlaskConical, 
+  Pill, 
+  Bug, 
+  Microscope, 
+  HeartPulse, 
+  BarChart3, 
+  Heart, 
+  Baby, 
+  Bone, 
+  Beaker,
+  Activity,
+  Target,
+  ShieldCheck,
+  ClipboardList
+} from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import clsx from 'clsx'
 
-const MOTIVATIONAL_QUOTES = [
-  { text: "The only way to do great work is to love what you study.", author: "Adapted from Steve Jobs" },
-  { text: "A doctor who doesn't study is like a surgeon with a butter knife.", author: "FCPS Wisdom" },
-  { text: "You didn't come this far to only come this far. Keep grinding!", author: "Every FCPS Survivor" },
-  { text: "Anatomy is just geography. You already know Google Maps.", author: "Dr. Optimist" },
-  { text: "Pathology: Where every slide tells a story you'll forget by tomorrow.", author: "Honest Med Student" },
-  { text: "Pharmacology is just memorizing side effects and pretending it's science.", author: "Every Trainee Ever" },
-  { text: "Pass FCPS and you'll never have to explain what FCPS is again.", author: "Future Fellow" },
-  { text: "Study hard, nap harder. Balance is key.", author: "Wise PG Trainee" },
-  { text: "The Krebs cycle called. It wants you to stop ignoring it.", author: "Biochemistry Department" },
-  { text: "One MCQ at a time. That's how mountains are climbed.", author: "FCPS Marathon Runner" },
-  { text: "Your future patients are counting on you. No pressure though.", author: "Gentle Reminder" },
-  { text: "Coffee + Past Papers = FCPS Success Formula", author: "Evidence-Based Medicine" },
-  { text: "Remember: Ganong believed in you before you believed in yourself.", author: "BRS Physiology Fan" },
-  { text: "First Aid isn't just a book, it's a lifestyle.", author: "Step 1 Veteran" },
+const CLINICAL_INSIGHTS = [
+  { text: "Precision in foundational concepts dictates clinical outcomes.", author: "Diagnostic Protocol" },
+  { text: "Systematic review of pathology reveals the underlying physiological truth.", author: "Clinical Methodology" },
+  { text: "High-yield mastery is built through consistent neural recalibration.", author: "Board Review Strategy" },
+  { text: "A physician's capability is directly proportional to their baseline knowledge.", author: "Medical Registry" },
+  { text: "Protocol adherence and systematic study ensure assessment success.", author: "Fellowship Standards" },
 ]
 
 const ICON_MAP = {
@@ -37,12 +53,12 @@ export default function SubjectsPage() {
   const [progressMap, setProgressMap] = useState({})
   const [mcqCountMap, setMcqCountMap] = useState({})
   const [activeTab, setActiveTab] = useState(1)
-  const [quote, setQuote] = useState(MOTIVATIONAL_QUOTES[0])
+  const [insight, setInsight] = useState(CLINICAL_INSIGHTS[0])
   
   const supabase = createClient()
 
   useEffect(() => {
-    setQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)])
+    setInsight(CLINICAL_INSIGHTS[Math.floor(Math.random() * CLINICAL_INSIGHTS.length)])
   }, [])
 
   useEffect(() => {
@@ -102,11 +118,17 @@ export default function SubjectsPage() {
 
   if (loading) {
      return (
-        <div className="flex justify-center items-center h-[60vh]">
-           <div className="relative">
-             <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-200 border-t-blue-600"></div>
-             <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-amber-400 animate-pulse" />
-           </div>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#FFFBFB]">
+          <div className="relative">
+            <div className="w-16 h-16 border-[4px] border-primary/10 border-t-primary rounded-2xl animate-[spin_1.5s_linear_infinite]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Activity size={24} className="text-primary animate-pulse" />
+            </div>
+          </div>
+          <div className="mt-8 text-center space-y-1">
+            <h2 className="text-sm font-display font-black text-slate-900 tracking-tight uppercase">Loading Clinical Registry</h2>
+            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] animate-pulse">Syncing Diagnostic Modules</p>
+          </div>
         </div>
      )
   }
@@ -119,135 +141,141 @@ export default function SubjectsPage() {
   const totalMCQs = Object.values(mcqCountMap).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-      
-      {/* Hero Header with Quote */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 p-8 md:p-10"
-      >
-        {/* Sparkle particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="absolute animate-pulse" style={{
-              left: `${15 + i * 15}%`, top: `${10 + (i % 3) * 30}%`,
-              animationDelay: `${i * 0.4}s`, animationDuration: `${2 + i * 0.3}s`
-            }}>
-              <Sparkles className="w-3 h-3 text-amber-400/30" />
-            </div>
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-[0.2em]">FCPS Part I — Gynae & Obs</span>
-          </div>
-          
-          <h1 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight">
-            Syllabus Mastery
-          </h1>
-          
-          {/* Motivational Quote */}
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 mt-4 max-w-2xl">
-            <p className="text-blue-100 text-sm md:text-base italic leading-relaxed">"{quote.text}"</p>
-            <p className="text-blue-300/60 text-xs mt-2 font-medium">— {quote.author}</p>
-          </div>
-
-          {/* Stats Row */}
-          <div className="flex flex-wrap gap-4 mt-6">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
-              <BookOpen className="w-4 h-4 text-blue-300" />
-              <span className="text-white/90 text-sm font-bold">{subjects.length} Subjects</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
-              <Brain className="w-4 h-4 text-purple-300" />
-              <span className="text-white/90 text-sm font-bold">{totalMCQs.toLocaleString()} MCQs</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2">
-              <Flame className="w-4 h-4 text-orange-300" />
-              <span className="text-white/90 text-sm font-bold">2 Papers</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Search + Tab Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        {/* Tabs */}
-        <div className="flex bg-slate-100 rounded-2xl p-1.5 gap-1">
-          <button 
-            onClick={() => setActiveTab(1)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 1 ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-black">P1</span>
-              Paper I — General
-            </span>
-          </button>
-          <button 
-            onClick={() => setActiveTab(2)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 2 ? 'bg-white text-slate-900 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-md bg-teal-100 text-teal-600 flex items-center justify-center text-[10px] font-black">P2</span>
-              Paper II — Specialty
-            </span>
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="relative w-full md:max-w-xs">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-slate-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-            placeholder="Search subjects..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Subject Cards Grid */}
-      <AnimatePresence mode="wait">
+    <main className="min-h-screen bg-[#FFFBFB] p-4 md:p-8 lg:p-12 selection:bg-primary/10 font-sans">
+      <div className="max-w-7xl mx-auto space-y-12">
+        
+        {/* Immersive Clinical Header */}
         <motion.div 
-          key={activeTab}
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="relative overflow-hidden bg-slate-900 p-10 md:p-14 rounded-[4rem] text-white shadow-2xl group"
         >
-          {activeSubjects.map((subject, idx) => (
-            <SubjectCard 
-              key={subject.id} 
-              subject={subject} 
-              progress={progressMap[subject.id] || 0} 
-              mcqCount={mcqCountMap[subject.id] || 0}
-              index={idx}
-            />
-          ))}
-        </motion.div>
-      </AnimatePresence>
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 p-12 opacity-[0.05] text-white -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-1000">
+            <ClipboardList size={240} />
+          </div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-[100px] -ml-32 -mb-32" />
 
-      {activeSubjects.length === 0 && (
-        <div className="text-center py-16">
-          <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500 font-medium">No subjects found matching your search.</p>
+          <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10 backdrop-blur-md shadow-xl">
+                  <ShieldCheck className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black tracking-[0.3em] uppercase text-primary">Assessment Registry</h4>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">FCPS Part I Protocol</p>
+                </div>
+              </div>
+              
+              <div>
+                <h1 className="text-4xl md:text-5xl font-display font-black text-white tracking-tight leading-tight mb-4">
+                  Syllabus Mastery Registry
+                </h1>
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 relative group/insight">
+                  <Sparkles className="absolute -top-3 -right-3 w-6 h-6 text-primary animate-pulse" />
+                  <p className="text-slate-300 text-sm italic leading-relaxed">"{insight.text}"</p>
+                  <p className="text-primary text-[10px] font-black uppercase tracking-[0.2em] mt-3">— {insight.author}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 items-center justify-center md:justify-end">
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-[2.5rem] min-w-[140px] text-center space-y-1">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Units</p>
+                <p className="text-3xl font-display font-black text-white">{subjects.length}</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-[2.5rem] min-w-[140px] text-center space-y-1">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">MCQ Density</p>
+                <p className="text-3xl font-display font-black text-primary">{totalMCQs.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-[2.5rem] min-w-[140px] text-center space-y-1">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Papers</p>
+                <p className="text-3xl font-display font-black text-white">02</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Search & Navigation Control */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+          {/* Tabs */}
+          <div className="flex bg-slate-100/50 backdrop-blur-sm rounded-[2rem] p-2 gap-2 border border-slate-100">
+            <button 
+              onClick={() => setActiveTab(1)}
+              className={clsx(
+                "px-8 py-3 rounded-[1.5rem] text-xs font-black transition-all uppercase tracking-widest flex items-center gap-3",
+                activeTab === 1 ? "bg-white text-slate-900 shadow-xl shadow-slate-200" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <div className={clsx("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", activeTab === 1 ? "bg-primary/10 text-primary" : "bg-slate-200 text-slate-400")}>P1</div>
+              General Core
+            </button>
+            <button 
+              onClick={() => setActiveTab(2)}
+              className={clsx(
+                "px-8 py-3 rounded-[1.5rem] text-xs font-black transition-all uppercase tracking-widest flex items-center gap-3",
+                activeTab === 2 ? "bg-white text-slate-900 shadow-xl shadow-slate-200" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <div className={clsx("w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black", activeTab === 2 ? "bg-secondary/10 text-secondary" : "bg-slate-200 text-slate-400")}>P2</div>
+              Specialty Mastery
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="relative w-full lg:max-w-md group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-14 pr-8 py-5 border-none rounded-[2rem] text-sm bg-white placeholder-slate-300 focus:outline-none focus:ring-[12px] focus:ring-primary/5 transition-all shadow-inner font-bold text-slate-900"
+              placeholder="Search diagnostic module..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Subject Cards Grid */}
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {activeSubjects.map((subject, idx) => (
+              <SubjectCard 
+                key={subject.id} 
+                subject={subject} 
+                progress={progressMap[subject.id] || 0} 
+                mcqCount={mcqCountMap[subject.id] || 0}
+                index={idx}
+              />
+            ))}
+          </motion.div>
+        </AnimatePresence>
+
+        {activeSubjects.length === 0 && (
+          <div className="text-center py-24 bg-white rounded-[4rem] border border-slate-100 shadow-sm flex flex-col items-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200 mb-6 border border-slate-100 shadow-inner">
+              <Search size={40} />
+            </div>
+            <h3 className="text-xl font-display font-black text-slate-900 tracking-tight uppercase">Registry Entry Not Found</h3>
+            <p className="text-slate-400 mt-2 font-medium">No diagnostic modules match your current query.</p>
+          </div>
+        )}
+      </div>
+    </main>
   )
 }
 
 function SubjectCard({ subject, progress, mcqCount, index }) {
-  const hex = subject.color_hex || '#3B82F6'
+  const hex = subject.color_hex || '#0EA5E9'
   const IconComponent = ICON_MAP[subject.icon_name] || BookOpen
   
   return (
@@ -257,69 +285,67 @@ function SubjectCard({ subject, progress, mcqCount, index }) {
       transition={{ delay: index * 0.05 }}
     >
       <Link href={`/subjects/${subject.id}`} className="block group">
-        <div className="relative bg-white rounded-2xl overflow-hidden border border-slate-100 hover:border-slate-200 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 h-full flex flex-col">
+        <div className="relative bg-white rounded-[3rem] overflow-hidden border border-slate-100 hover:border-primary/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_80px_-20px_rgba(14,165,233,0.15)] h-full flex flex-col p-8">
           
-          {/* Gradient accent bar */}
-          <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${hex}, ${hex}88)` }}></div>
-          
-          {/* Sparkle on hover */}
-          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-          </div>
-
-          <div className="p-5 flex-1 flex flex-col">
-            {/* Icon + Title */}
-            <div className="flex items-start gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: `${hex}15` }}>
-                <IconComponent className="w-5 h-5" style={{ color: hex }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors text-base leading-snug line-clamp-2">{subject.name}</h3>
-                <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{subject.description}</p>
+          {/* Header Stats */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-500" style={{ backgroundColor: `${hex}10` }}>
+              <IconComponent className="w-7 h-7" style={{ color: hex }} />
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">Paper {subject.paper_number}</span>
+              <div className={clsx(
+                "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter",
+                progress >= 70 ? "bg-emerald-50 text-emerald-600" : "bg-primary/5 text-primary"
+              )}>
+                {progress}% Mastery
               </div>
             </div>
+          </div>
+          
+          <div className="flex-1 flex flex-col">
+            <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary transition-colors tracking-tight mb-2 leading-tight">
+              {subject.name}
+            </h3>
+            <p className="text-xs text-slate-500 font-medium line-clamp-2 mb-8">{subject.description}</p>
             
-            {/* Stats Row */}
-            <div className="mt-auto pt-3 border-t border-slate-50 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex gap-3">
-                  <span className="text-slate-400 font-medium flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" />
-                    {subject.topics?.[0]?.count || 0} Topics
-                  </span>
-                  <span className="text-slate-400 font-medium flex items-center gap-1">
-                    <Brain className="w-3 h-3" />
-                    {mcqCount} MCQs
-                  </span>
+            {/* Meta Row */}
+            <div className="mt-auto space-y-6">
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Domains</span>
+                  <span className="text-xs font-black text-slate-900">{subject.topics?.[0]?.count || 0} Nodes</span>
                 </div>
-                
-                <span className={`font-black text-xs px-2 py-0.5 rounded-full ${
-                  progress > 0  
-                    ? progress >= 70 ? 'bg-emerald-50 text-emerald-600' 
-                    : progress >= 40 ? 'bg-amber-50 text-amber-600' 
-                    : 'bg-blue-50 text-blue-600'
-                  : 'bg-slate-50 text-slate-400'
-                }`}>
-                  {progress}%
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Tasks</span>
+                  <span className="text-xs font-black text-slate-900">{mcqCount} MCQs</span>
+                </div>
               </div>
               
-              {/* Progress bar */}
-              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.8, delay: index * 0.05 }}
-                  className="h-1.5 rounded-full" 
-                  style={{ background: `linear-gradient(90deg, ${hex}, ${hex}cc)` }}
-                />
+              {/* Progress Bar Container */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Neural Integration</span>
+                  <span className="text-slate-900">{progress}%</span>
+                </div>
+                <div className="w-full bg-slate-50 rounded-full h-2 overflow-hidden shadow-inner p-0.5 border border-slate-100">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1, delay: 0.2 + index * 0.05 }}
+                    className="h-full rounded-full shadow-[0_0_12px_rgba(14,165,233,0.3)]" 
+                    style={{ backgroundColor: hex }}
+                  />
+                </div>
               </div>
 
-              {/* CTA */}
-              <div className="flex items-center justify-end">
-                <span className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors flex items-center gap-1">
-                  Study Now <ChevronRight className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
+                  Access Protocol
                 </span>
+                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all duration-500">
+                  <ChevronRight size={16} />
+                </div>
               </div>
             </div>
           </div>
